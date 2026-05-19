@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="兜式保客戶資料庫">
+<meta name="theme-color" content="#D4820A">
+<title>兜式保客戶資料庫 — 客戶管理</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --accent:#D4820A;--accent-light:#FFF3D6;--accent-dark:#7A4900;
+  --bg:#E8C99A;--surface:#FFFFFF;--surface2:#FDF6EC;
+  --text:#2C1A05;--text2:#5C3D10;--text3:#8C6030;
+  --border:#D4820A;--border2:#B86A00;
+  --danger:#D93025;--warn:#EA8600;--info:#1967D2;
+  --radius:12px;--radius-sm:8px;--radius-pill:99px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+  --shadow-lg:0 4px 16px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.07);
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.5}
+#app{height:100dvh;display:flex;flex-direction:column;max-width:430px;margin:0 auto;background:var(--surface);position:relative;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,.12)}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--surface);transition:transform .28s cubic-bezier(.4,0,.2,1);will-change:transform}
+.screen.behind{transform:translateX(-30%);pointer-events:none}
+.screen.offright{transform:translateX(100%);pointer-events:none}
+.screen.active{transform:translateX(0);pointer-events:all}
+.topbar{padding:env(safe-area-inset-top,0) 0 0;background:var(--surface);border-bottom:1px solid var(--border);z-index:10;flex-shrink:0}
+.topbar-inner{padding:12px 16px 10px;display:flex;align-items:center;gap:10px}
+.topbar-title{font-size:20px;font-weight:700;color:var(--text);flex:1}
+.topbar-sub{font-size:15px;font-weight:500;color:var(--text);flex:1}
+.icon-btn{width:38px;height:38px;border-radius:50%;border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;transition:background .15s}
+.icon-btn:active{background:var(--border)}
+.icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fab{position:absolute;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0));width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-lg);z-index:15;transition:transform .15s,box-shadow .15s}
+.fab:active{transform:scale(.93);box-shadow:var(--shadow)}
+.fab svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.search-wrap{padding:8px 16px 10px}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-sm);padding:0 12px;height:38px;border:1px solid var(--border)}
+.search-box svg{width:16px;height:16px;stroke:var(--text3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.search-box input{flex:1;border:none;background:transparent;font-size:15px;color:var(--text);outline:none;font-family:inherit}
+.search-box input::placeholder{color:var(--text3)}
+.tags-scroll{display:flex;gap:6px;overflow-x:auto;padding:0 16px 12px;scrollbar-width:none}
+.tags-scroll::-webkit-scrollbar{display:none}
+.tag-pill{padding:6px 14px;border-radius:var(--radius-pill);font-size:13px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.tag-pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 16px 100px}
+.client-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s;box-shadow:var(--shadow)}
+.client-card:active{border-color:var(--border2);box-shadow:none}
+.card-row1{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.card-names{flex:1;min-width:0}
+.card-name{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-company{font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:2px}
+.card-row2{display:flex;align-items:center;justify-content:space-between}
+.badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--radius-pill)}
+.card-since{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:3px}
+.card-note{font-size:13px;color:var(--text2);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.policy-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);transition:border-color .15s}
+.policy-card:active{border-color:var(--border2);box-shadow:none}
+.policy-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.policy-type{font-size:15px;font-weight:700;color:var(--text)}
+.policy-num{font-size:12px;color:var(--text3);margin-top:2px}
+.policy-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.policy-meta-item{display:flex;flex-direction:column;gap:2px}
+.policy-meta-label{font-size:11px;color:var(--text3)}
+.policy-meta-val{font-size:13px;color:var(--text);font-weight:500}
+.policy-client-row{font-size:13px;color:var(--accent);font-weight:500;display:flex;align-items:center;gap:4px;margin-top:6px}
+/* 業績卡片 */
+.perf-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);transition:border-color .15s}
+.perf-card:active{border-color:var(--border2);box-shadow:none}
+.perf-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.perf-type{font-size:15px;font-weight:700;color:var(--text)}
+.perf-date{font-size:12px;color:var(--text3)}
+.perf-fyc{font-size:18px;font-weight:700;color:var(--accent);margin:6px 0}
+.perf-row{display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.perf-item{display:flex;flex-direction:column;gap:2px}
+.perf-item-label{font-size:11px;color:var(--text3)}
+.perf-item-val{font-size:13px;color:var(--text);font-weight:500}
+.perf-client{font-size:13px;color:var(--accent);font-weight:500;display:flex;align-items:center;gap:4px;margin-top:6px}
+/* 月份標題 */
+.month-hd{font-size:12px;font-weight:700;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;padding:12px 0 6px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.bottomnav{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px 6px;border:none;background:none;cursor:pointer;color:var(--text3);font-size:9px;font-family:inherit;font-weight:500;transition:color .15s}
+.nav-item.on{color:var(--accent)}
+.nav-item svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.panel-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px 40px}
+.big-avatar{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.stat-card{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px}
+.stat-label{font-size:11px;color:var(--text3);margin-bottom:4px}
+.stat-val{font-size:22px;font-weight:700;color:var(--text)}
+.field-block{margin-bottom:18px}
+.field-label{font-size:12px;color:var(--text3);margin-bottom:6px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.field-row{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--text)}
+.field-row svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.section-hd{font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 10px}
+.follow-item{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px}
+.follow-date{font-size:12px;color:var(--text3);margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.follow-date svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.follow-text{font-size:14px;color:var(--text);line-height:1.55}
+.add-follow-box{background:var(--surface2);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;border:1px solid var(--border)}
+.add-follow-box textarea{width:100%;background:transparent;border:none;outline:none;font-size:14px;color:var(--text);font-family:inherit;line-height:1.5;resize:none}
+.save-row{display:flex;justify-content:flex-end;margin-top:6px}
+.btn-sm{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 16px;font-size:14px;font-family:inherit;cursor:pointer;font-weight:500}
+.btn-sm:active{opacity:.8}
+.form-field{margin-bottom:16px}
+.form-label{font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500}
+.form-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;font-size:15px;color:var(--text);outline:none;font-family:inherit;transition:border-color .15s}
+.form-input:focus{border-color:var(--accent)}
+textarea.form-input{resize:none;line-height:1.55}
+select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238C6030' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.chip{padding:6px 14px;border-radius:var(--radius-pill);font-size:13px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .15s}
+.chip.on{background:var(--accent-light);border-color:var(--accent);color:var(--accent-dark)}
+.action-bar{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;padding-bottom:calc(12px + env(safe-area-inset-bottom,0))}
+.btn-outline{flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px;font-size:15px;font-family:inherit;cursor:pointer;font-weight:500;transition:background .15s}
+.btn-outline:active{background:var(--border)}
+.btn-fill{flex:2;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:13px;font-size:15px;font-family:inherit;cursor:pointer;font-weight:500;transition:opacity .15s}
+.btn-fill:active{opacity:.85}
+.btn-danger{flex:1;background:#FEE2E2;color:var(--danger);border:none;border-radius:var(--radius-sm);padding:13px;font-size:15px;font-family:inherit;cursor:pointer;font-weight:500}
+.btn-danger:active{opacity:.8}
+.bar-row{margin-bottom:13px}
+.bar-meta{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.bar-track{height:8px;background:var(--surface2);border-radius:var(--radius-pill);overflow:hidden}
+.bar-fill{height:100%;border-radius:var(--radius-pill)}
+.timeline-item{display:flex;gap:12px;margin-bottom:14px;cursor:pointer}
+.tl-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
+.tl-body{flex:1;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px}
+.tl-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.tl-name{font-size:13px;font-weight:500;color:var(--text)}
+.tl-date{font-size:12px;color:var(--text3)}
+.tl-note{font-size:13px;color:var(--text2);line-height:1.5}
+.todo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);transition:border-color .15s;display:flex;gap:12px;align-items:flex-start}
+.todo-card:active{border-color:var(--border2);box-shadow:none}
+.todo-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.todo-check.done{background:var(--accent);border-color:var(--accent)}
+.todo-check.done svg{display:block}
+.todo-check svg{display:none;width:12px;height:12px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.todo-body{flex:1;min-width:0}
+.todo-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:4px}
+.todo-title.done{text-decoration:line-through;color:var(--text3)}
+.todo-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.priority-badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:var(--radius-pill)}
+.status-badge{font-size:11px;padding:2px 8px;border-radius:var(--radius-pill);background:var(--surface2);color:var(--text2)}
+.todo-due{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:3px}
+.todo-due.overdue{color:var(--danger)}
+.empty svg{width:48px;height:48px;stroke:var(--border2);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 14px;display:block}
+.empty p{font-size:15px}
+.toast{position:fixed;bottom:calc(82px + env(safe-area-inset-bottom,0));left:50%;transform:translateX(-50%) translateY(20px);background:#2C1A05;color:#fff;font-size:14px;padding:10px 20px;border-radius:var(--radius-pill);opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.show{opacity:1;pointer-events:all}
+.dialog{background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom,0));width:100%;max-width:430px;transform:translateY(100%);transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.overlay.show .dialog{transform:translateY(0)}
+.dialog h3{font-size:17px;font-weight:700;margin-bottom:8px}
+.dialog p{font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6}
+.dialog-btns{display:flex;gap:10px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 底部導覽 HTML 片段，每個主頁面共用 -->
+  <!-- 客戶首頁 -->
+  <div class="screen active" id="homeScreen">
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-title">兜式保客戶資料庫</div>
+        <button class="icon-btn" onclick="exportData()" title="匯出資料">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+      </div>
+      <div class="search-wrap"><div class="search-box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="search" id="searchQ" placeholder="搜尋姓名、公司…" oninput="renderList()"></div></div>
+      <div class="tags-scroll" id="tagsRow"></div>
+    </div>
+    <div class="scroll-area" id="clientList"></div>
+    <button class="fab" onclick="openAdd()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+    <nav class="bottomnav">
+      <button class="nav-item on" onclick="switchTab(0)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>客戶</button>
+      <button class="nav-item" onclick="switchTab(1)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>追蹤</button>
+      <button class="nav-item" onclick="switchTab(2)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>保單</button>
+      <button class="nav-item" onclick="switchTab(3)"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>代辦</button>
+      <button class="nav-item" onclick="switchTab(4)"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>總覽</button>
+    </nav>
+  </div>
+
+  <!-- 客戶詳情 -->
+  <div class="screen offright" id="detailScreen">
+    <div class="topbar"><div class="topbar-inner"><button class="icon-btn" onclick="goBack()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button><div class="topbar-sub" id="detailTitle">客戶詳情</div><button class="icon-btn" onclick="openEdit(currentId)"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></div>
+    <div class="panel-body" id="detailBody"></div>
+  </div>
+
+  <!-- 編輯客戶 -->
+  <div class="screen offright" id="editScreen">
+    <div class="topbar"><div class="topbar-inner"><button class="icon-btn" onclick="goBack()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="topbar-sub" id="editTitle">新增客戶</div></div></div>
+    <div class="panel-body" id="editBody"></div>
+    <div class="action-bar" id="editActions"></div>
+  </div>
+
+  <!-- 追蹤紀錄頁 -->
+  <div class="screen offright" id="followScreen">
+    <div class="topbar"><div class="topbar-inner"><button class="icon-btn" onclick="goBack()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button><div class="topbar-sub">近期追蹤紀錄</div></div></div>
+    <div class="scroll-area" id="followBody"></div>
+    <nav class="bottomnav">
+      <button class="nav-item" onclick="switchTab(0)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>客戶</button>
+      <button class="nav-item on" onclick="switchTab(1)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>追蹤</button>
+      <button class="nav-item" onclick="switchTab(2)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>保單</button>
+      <button class="nav-item" onclick="switchTab(3)"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>代辦</button>
+      <button class="nav-item" onclick="switchTab(4)"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>總覽</button>
+    </nav>
+  </div>
+
+  <!-- 保單列表 -->
+  <div class="screen offright" id="policyScreen">
+    <div class="topbar"><div class="topbar-inner"><div class="topbar-title">保單</div><button class="icon-btn" onclick="openAddPolicy()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+    <div class="search-wrap"><div class="search-box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="search" id="policyQ" placeholder="搜尋保單號碼、險種、客戶…" oninput="renderPolicyList()"></div></div></div>
+    <div class="scroll-area" id="policyList"></div>
+    <nav class="bottomnav">
+      <button class="nav-item" onclick="switchTab(0)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>客戶</button>
+      <button class="nav-item" onclick="switchTab(1)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>追蹤</button>
+      <button class="nav-item on" onclick="switchTab(2)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>保單</button>
+      <button class="nav-item" onclick="switchTab(3)"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>代辦</button>
+      <button class="nav-item" onclick="switchTab(4)"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>總覽</button>
+    </nav>
+  </div>
+
+  <!-- 保單詳情 -->
+  <div class="screen offright" id="policyDetailScreen">
+    <div class="topbar"><div class="topbar-inner"><button class="icon-btn" onclick="goBack()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button><div class="topbar-sub" id="policyDetailTitle">保單詳情</div><button class="icon-btn" onclick="openEditPolicy(currentPolicyId)"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></div>
+    <div class="panel-body" id="policyDetailBody"></div>
+  </div>
+
+  <!-- 編輯保單 -->
+  <div class="screen offright" id="policyEditScreen">
+    <div class="topbar"><div class="topbar-inner"><button class="icon-btn" onclick="goBack()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="topbar-sub" id="policyEditTitle">新增保單</div></div></div>
+    <div class="panel-body" id="policyEditBody"></div>
+    <div class="action-bar" id="policyEditActions"></div>
+  </div>
+
+  <!-- 代辦事項 -->
+  <div class="screen offright" id="todoScreen">
+    <div class="topbar"><div class="topbar-inner"><div class="topbar-title">代辦事項</div><button class="icon-btn" onclick="openAddTodo()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+    <div style="display:flex;gap:6px;overflow-x:auto;padding:8px 16px;scrollbar-width:none" id="todoFilterRow"></div></div>
+    <div class="scroll-area" id="todoList"></div>
+    <nav class="bottomnav">
+      <button class="nav-item" onclick="switchTab(0)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>客戶</button>
+      <button class="nav-item" onclick="switchTab(1)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>追蹤</button>
+      <button class="nav-item" onclick="switchTab(2)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>保單</button>
+      <button class="nav-item on" onclick="switchTab(3)"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>代辦</button>
+      <button class="nav-item" onclick="switchTab(4)"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>總覽</button>
+    </nav>
+  </div>
+
+  <!-- 編輯代辦 -->
+  <div class="screen offright" id="todoEditScreen">
+    <div class="topbar"><div class="topbar-inner"><button class="icon-btn" onclick="goBack()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="topbar-sub" id="todoEditTitle">新增代辦</div></div></div>
+    <div class="panel-body" id="todoEditBody"></div>
+    <div class="action-bar" id="todoEditActions"></div>
+  </div>
+
+  <!-- 總覽 -->
+  <div class="screen offright" id="statsScreen">
+    <div class="topbar"><div class="topbar-inner"><button class="icon-btn" onclick="goBack()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button><div class="topbar-sub">業務總覽</div></div></div>
+    <div class="scroll-area" id="statsBody"></div>
+    <nav class="bottomnav">
+      <button class="nav-item" onclick="switchTab(0)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>客戶</button>
+      <button class="nav-item" onclick="switchTab(1)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>追蹤</button>
+      <button class="nav-item" onclick="switchTab(2)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>保單</button>
+      <button class="nav-item" onclick="switchTab(3)"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>代辦</button>
+      <button class="nav-item on" onclick="switchTab(4)"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>總覽</button>
+    </nav>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="overlay" id="overlay">
+  <div class="dialog">
+    <h3 id="dlgTitle">確認刪除</h3>
+    <p id="dlgMsg">確定要刪除嗎？此操作無法復原。</p>
+    <div class="dialog-btns">
+      <button class="btn-outline" style="flex:1" onclick="closeDialog()">取消</button>
+      <button class="btn-danger" style="flex:1;background:#D93025;color:#fff" id="dlgConfirm">刪除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TAGS=['A級','B級','C級','D級'];
+const TAG_DESC={'A級':'成交','B級':'有機會，要考慮','C級':'不錯，目前不考慮','D級':'沒機會'};
+const TAG_STYLE={'A級':{bg:'#EAF3DE',color:'#27500A',dot:'#63991A'},'B級':{bg:'#FFF3CD',color:'#7A4900',dot:'#EA8600'},'C級':{bg:'#E6F1FB',color:'#0C447C',dot:'#378ADD'},'D級':{bg:'#F1EFE8',color:'#444441',dot:'#888780'}};
+const AV_COLORS=[['#E1F5EE','#085041'],['#EEEDFE','#3C3489'],['#FBEAF0','#72243E'],['#E6F1FB','#0C447C'],['#FAEEDA','#633806'],['#EAF3DE','#27500A']];
+
+const SUPABASE_URL='https://jcfnnxcqvqkcpirevlrl.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjZm5ueGNxdnFrY3BpcmV2bHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjY4OTMsImV4cCI6MjA5NDQ0Mjg5M30.yCAh_An9fQcs6FPs-3n_V15FHYByzrTiYdKrxRbsGZ8';
+const HEADERS={'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
+
+const DEMO_C=[
+  {id:1,name:'陳大明',company:'創科科技有限公司',phone:'0912-345-678',birthday:'1985-03-15',address:'台北市信義區信義路五段7號',tag:'B級',region:'台北',nextContact:'2026-05-22',note:'對ERP系統有興趣，下週安排Demo',follows:[{date:'2026-05-10',note:'電話溝通確認需求，對雲端方案感興趣。'},{date:'2026-04-28',note:'初次接觸，留下名片並傳送公司簡介。'}]},
+  {id:2,name:'林美玲',company:'永豐貿易',phone:'0923-456-789',birthday:'1990-07-22',address:'台中市西屯區台灣大道三段99號',tag:'C級',region:'台中',nextContact:'2026-05-20',note:'在展覽上認識，需要進一步報價',follows:[{date:'2026-05-12',note:'傳送產品簡介資料，等待回覆。'}]},
+  {id:3,name:'張偉強',company:'建信建設',phone:'0934-567-890',birthday:'1978-11-08',address:'高雄市苓雅區四維三路2號',tag:'A級',region:'高雄',nextContact:'',note:'已完成簽約，導入專案進行中',follows:[{date:'2026-05-14',note:'客戶對系統相當滿意，討論第二期擴充計劃。'}]},
+  {id:4,name:'李雅婷',company:'台灣好食品',phone:'0956-789-012',birthday:'1995-01-30',address:'新竹市東區光復路一段101號',tag:'B級',region:'新竹',nextContact:'2026-05-25',note:'由老客戶介紹，對庫存管理有需求',follows:[]},
+];
+const DEMO_P=[
+  {id:1,policyNo:'L2024-00123',type:'終身壽險',premium:'36,000',effectDate:'2024-03-01',expireDate:'2064-03-01',insurer:'國泰人壽',clientId:3,perfs:[{id:1,premium:'36,000',fyc:'12,600',date:'2024-03-01'}]},
+  {id:2,policyNo:'H2025-00456',type:'實支實付醫療險',premium:'18,500',effectDate:'2025-01-15',expireDate:'2026-01-15',insurer:'富邦人壽',clientId:3,perfs:[{id:1,premium:'18,500',fyc:'5,550',date:'2025-01-15'}]},
+  {id:3,policyNo:'A2025-00789',type:'意外傷害險',premium:'8,200',effectDate:'2025-06-01',expireDate:'2026-06-01',insurer:'新光人壽',clientId:1,perfs:[]},
+];
+
+async function sbGet(table){
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&order=id.asc&limit=1`,{headers:HEADERS});
+    const rows=await r.json();
+    if(rows&&rows.length>0)return JSON.parse(rows[0].data);
+  }catch(e){console.error('sbGet',e)}
+  return null;
+}
+async function sbSet(table,data){
+  try{
+    const check=await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1`,{headers:HEADERS});
+    const rows=await check.json();
+    const body=JSON.stringify({data:JSON.stringify(data),updated_at:new Date().toISOString()});
+    if(rows&&rows.length>0){
+      await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${rows[0].id}`,{method:'PATCH',headers:{...HEADERS,'Prefer':'return=minimal'},body});
+    }else{
+      await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({data:JSON.stringify(data)})});
+    }
+  }catch(e){console.error('sbSet',e)}
+}
+
+async function loadC(){
+  const d=await sbGet('clients');
+  if(d&&d.length)return d;
+  await sbSet('clients',DEMO_C);
+  return JSON.parse(JSON.stringify(DEMO_C));
+}
+async function loadP(){
+  const d=await sbGet('policies');
+  if(d&&d.length)return d;
+  await sbSet('policies',DEMO_P);
+  return JSON.parse(JSON.stringify(DEMO_P));
+}
+async function saveC(){await sbSet('clients',clients)}
+async function saveP(){await sbSet('policies',policies)}
+
+let clients=[],policies=[],perfs=[];
+let nextCid=1,nextPid=1,nextPerfId=1;
+let activeTag='全部',currentId=null,currentPolicyId=null,currentPerfId=null;
+let editId=null,editPolicyId=null,editPerfId=null,editTagSel='B級';
+let stack=['homeScreen'];
+
+async function initApp(){
+  document.getElementById('clientList').innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>資料同步中…</p></div>`;
+  clients=await loadC();
+  policies=await loadP();
+  perfs=[];
+  nextCid=clients.reduce((m,c)=>Math.max(m,c.id),0)+1;
+  nextPid=policies.reduce((m,p)=>Math.max(m,p.id),0)+1;
+  initTagsRow();
+  renderList();
+  toast('資料已從雲端載入');
+}
+
+// ── 導航 ──
+function showScreen(id){
+  const prev=stack[stack.length-1];stack.push(id);
+  document.getElementById(prev).classList.add('behind');document.getElementById(prev).classList.remove('active');
+  document.getElementById(id).classList.remove('offright','behind');document.getElementById(id).classList.add('active');
+}
+function goBack(){
+  if(stack.length<2)return;
+  const cur=stack.pop();const prev=stack[stack.length-1];
+  document.getElementById(cur).classList.remove('active');document.getElementById(cur).classList.add('offright');
+  document.getElementById(prev).classList.remove('behind','offright');document.getElementById(prev).classList.add('active');
+  renderList();
+}
+const TAB_SCREENS=['homeScreen','followScreen','policyScreen','todoScreen','statsScreen'];
+const TAB_FNS=[renderList,renderFollow,renderPolicyList,renderTodoList,renderStats];
+function switchTab(idx){
+  stack=[TAB_SCREENS[idx]];
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active','behind');s.classList.add('offright')});
+  document.getElementById(TAB_SCREENS[idx]).classList.remove('offright');
+  document.getElementById(TAB_SCREENS[idx]).classList.add('active');
+  TAB_FNS[idx]();
+}
+
+// ── 工具 ──
+function av(id){return AV_COLORS[id%AV_COLORS.length]}
+function initials(n){return n.slice(0,2)}
+function avatarLabel(c){return(c.region||'').slice(0,2)||initials(c.name)}
+function badge(tag){const s=TAG_STYLE[tag]||{bg:'#F5EDE3',color:'#6B4C2A'};return`<span class="badge" style="background:${s.bg};color:${s.color}">${tag}</span>`}
+function dot(tag){return`<div class="status-dot" style="background:${(TAG_STYLE[tag]||{dot:'#A08060'}).dot}"></div>`}
+function today(){return new Date().toISOString().slice(0,10)}
+function daysSince(d){return Math.max(0,Math.floor((new Date()-new Date(d))/86400000))}
+function daysLabel(d){const n=daysSince(d);return n===0?'今天':n+'天前'}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function numVal(s){return parseInt((s||'').replace(/[^0-9]/g,''))||0}
+let toastT;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2200)}
+function closeDialog(){document.getElementById('overlay').classList.remove('show')}
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDialog()});
+
+function initTagsRow(){document.getElementById('tagsRow').innerHTML=['全部',...TAGS].map(t=>`<button class="tag-pill${t===activeTag?' on':''}" onclick="setTag('${t}')">${t} <span style="font-size:10px;opacity:.7">${t==='全部'?'':TAG_DESC[t]}</span></button>`).join('')}
+function setTag(t){activeTag=t;initTagsRow();renderList()}
+
+// ── 客戶列表 ──
+let pressTimer=null;
+function startPress(id){pressTimer=setTimeout(()=>showDeleteMenu(id),600)}
+function endPress(){clearTimeout(pressTimer)}
+function showDeleteMenu(id){
+  const c=clients.find(x=>x.id===id);
+  document.getElementById('dlgTitle').textContent='刪除客戶';
+  document.getElementById('dlgMsg').textContent=`確定要刪除「${c.name}」嗎？此操作無法復原。`;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('dlgConfirm').onclick=()=>{
+    clients=clients.filter(x=>x.id!==id);
+    saveC();closeDialog();renderList();toast('客戶已刪除');
+  };
+}
+function renderList(){
+  const q=(document.getElementById('searchQ').value||'').toLowerCase();
+  const filtered=clients.filter(c=>(activeTag==='全部'||c.tag===activeTag)&&(!q||c.name.toLowerCase().includes(q)||c.company.toLowerCase().includes(q)));
+  const el=document.getElementById('clientList');
+  if(!filtered.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>找不到符合的客戶</p></div>`;return;}
+  el.innerHTML=filtered.map(c=>{
+    const ac=av(c.id);const last=c.follows[0];
+    const pc=policies.filter(p=>p.clientId===c.id).length;
+    return`<div class="client-card"
+      onclick="openDetail(${c.id})"
+      onmousedown="startPress(${c.id})" onmouseup="endPress()" onmouseleave="endPress()"
+      ontouchstart="startPress(${c.id})" ontouchend="endPress()" ontouchmove="endPress()">
+      <div class="card-row1"><div class="avatar" style="background:${ac[0]};color:${ac[1]}">${avatarLabel(c)}</div><div class="card-names"><div class="card-name">${escHtml(c.name)}</div><div class="card-company">${escHtml(c.company)}</div></div>${dot(c.tag)}</div>
+      <div class="card-row2"><div style="display:flex;gap:6px;align-items:center">${badge(c.tag)}${pc?`<span style="font-size:11px;background:var(--accent-light);color:var(--accent-dark);padding:3px 8px;border-radius:var(--radius-pill);font-weight:500">${pc}張保單</span>`:''}</div>${last?`<div class="card-since"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${daysLabel(last.date)}</div>`:'<div></div>'}</div>
+      ${c.note?`<div class="card-note">${escHtml(c.note)}</div>`:''}
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center;opacity:.5">長按可刪除</div>
+    </div>`;
+  }).join('');
+}
+
+// ── 客戶詳情 ──
+function openDetail(id){
+  currentId=id;const c=clients.find(x=>x.id===id);
+  document.getElementById('detailTitle').textContent=c.name;
+  const ac=av(c.id);const cp=policies.filter(p=>p.clientId===id);
+  document.getElementById('detailBody').innerHTML=`
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px"><div class="big-avatar" style="background:${ac[0]};color:${ac[1]}">${avatarLabel(c)}</div><div><div style="font-size:20px;font-weight:700">${escHtml(c.name)}</div><div style="font-size:14px;color:var(--text2);margin-top:3px">${escHtml(c.company)}</div></div></div>
+    <div class="grid2"><div class="stat-card"><div class="stat-label">分級</div>${badge(c.tag)}<div style="font-size:11px;color:var(--text3);margin-top:4px">${TAG_DESC[c.tag]||''}</div></div><div class="stat-card"><div class="stat-label">保單數</div><div class="stat-val">${cp.length}</div></div></div>
+    ${c.phone?`<div class="field-block"><div class="field-label">電話</div><div class="field-row"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.08 6.08l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${escHtml(c.phone)}</div></div>`:''}
+    ${c.birthday?`<div class="field-block"><div class="field-label">生日</div><div class="field-row"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${escHtml(c.birthday)}</div></div>`:''}
+    ${c.address?`<div class="field-block"><div class="field-label">地址</div><div class="field-row"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${escHtml(c.address)}</div></div>`:''}
+    ${c.region?`<div class="field-block"><div class="field-label">負責地區</div><div class="field-row"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>${escHtml(c.region)}</div></div>`:''}
+    ${c.nextContact?`<div class="field-block"><div class="field-label">下次聯絡日期</div><div style="display:flex;align-items:center;justify-content:space-between"><div class="field-row"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${escHtml(c.nextContact)}</div><button onclick="addToCalendar('${escHtml(c.name)}','${escHtml(c.nextContact)}')" style="background:var(--accent-light);color:var(--accent-dark);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:500;display:flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>加入行事曆</button></div></div>`:''}
+    ${c.note?`<div class="field-block"><div class="field-label">備註</div><div style="font-size:14px;color:var(--text);line-height:1.6">${escHtml(c.note)}</div></div>`:''}
+    ${cp.length?`<div class="section-hd">成交保單</div>${cp.map(p=>`<div class="policy-card" onclick="openPolicyDetail(${p.id})"><div class="policy-top"><div><div class="policy-type">${escHtml(p.type)}</div><div class="policy-num">${escHtml(p.policyNo)}</div></div><span style="font-size:12px;color:var(--text3)">${escHtml(p.insurer)}</span></div><div class="policy-meta"><div class="policy-meta-item"><div class="policy-meta-label">年繳保費</div><div class="policy-meta-val">NT$ ${escHtml(p.premium)}</div></div><div class="policy-meta-item"><div class="policy-meta-label">到期日</div><div class="policy-meta-val">${escHtml(p.expireDate)}</div></div></div></div>`).join('')}`:''}
+    <div class="section-hd">追蹤紀錄</div>
+    <div class="add-follow-box"><textarea id="newNote" rows="2" placeholder="記錄今天的追蹤紀錄內容…"></textarea><div class="save-row"><button class="btn-sm" onclick="addFollow(${id})">儲存記錄</button></div></div>
+    <div id="followsHere">${renderFI(c)}</div>
+  `;
+  showScreen('detailScreen');
+}
+function renderFI(c){
+  if(!c.follows.length)return`<div style="text-align:center;color:var(--text3);padding:20px;font-size:14px">尚無追蹤紀錄</div>`;
+  return c.follows.map((f,i)=>`
+    <div class="follow-item" id="fi_${c.id}_${i}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <div class="follow-date" style="margin-bottom:0"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${f.date}</div>
+        <div style="display:flex;gap:6px">
+          <button onclick="editFollow(${c.id},${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:2px" title="編輯"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button onclick="delFollow(${c.id},${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:2px" title="刪除"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+        </div>
+      </div>
+      <div class="follow-text" id="fi_text_${c.id}_${i}">${escHtml(f.note)}</div>
+    </div>`).join('');
+}
+function addFollow(id){
+  const ta=document.getElementById('newNote');const note=ta.value.trim();if(!note)return;
+  const c=clients.find(x=>x.id===id);
+  c.follows.unshift({date:today(),note});
+  saveC();ta.value='';
+  document.getElementById('followsHere').innerHTML=renderFI(c);
+  toast('追蹤紀錄已儲存');
+}
+function delFollow(clientId,idx){
+  const c=clients.find(x=>x.id===clientId);
+  c.follows.splice(idx,1);
+  saveC();
+  document.getElementById('followsHere').innerHTML=renderFI(c);
+  toast('已刪除');
+}
+function editFollow(clientId,idx){
+  const c=clients.find(x=>x.id===clientId);
+  const f=c.follows[idx];
+  const el=document.getElementById(`fi_${clientId}_${idx}`);
+  el.innerHTML=`
+    <div style="margin-bottom:6px"><input class="form-input" id="ef_date_${idx}" type="date" value="${f.date}" style="padding:8px 10px;font-size:14px;margin-bottom:6px"><textarea class="form-input" id="ef_note_${idx}" rows="3" style="padding:8px 10px;font-size:14px">${escHtml(f.note)}</textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="document.getElementById('followsHere').innerHTML=renderFI(clients.find(x=>x.id===${clientId}))" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 14px;font-size:13px;cursor:pointer">取消</button>
+      <button onclick="saveFollow(${clientId},${idx})" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:6px 14px;font-size:13px;cursor:pointer;font-weight:500">儲存</button>
+    </div>
+  `;
+}
+function saveFollow(clientId,idx){
+  const c=clients.find(x=>x.id===clientId);
+  const date=document.getElementById(`ef_date_${idx}`).value.trim();
+  const note=document.getElementById(`ef_note_${idx}`).value.trim();
+  if(!note)return;
+  c.follows[idx]={date:date||today(),note};
+  saveC();
+  document.getElementById('followsHere').innerHTML=renderFI(c);
+  toast('追蹤紀錄已更新');
+}
+
+// ── 編輯客戶 ──
+function openAdd(){editId=null;editTagSel='B級';document.getElementById('editTitle').textContent='新增客戶';buildEditForm(null);showScreen('editScreen')}
+function openEdit(id){editId=id;const c=clients.find(x=>x.id===id);editTagSel=c.tag;document.getElementById('editTitle').textContent='編輯客戶';buildEditForm(c);showScreen('editScreen')}
+function buildEditForm(c){
+  document.getElementById('editBody').innerHTML=`
+    <div class="form-field"><div class="form-label">姓名 *</div><input class="form-input" id="fi_name" value="${c?escHtml(c.name):''}" placeholder="客戶姓名"></div>
+    <div class="form-field"><div class="form-label">公司</div><input class="form-input" id="fi_company" value="${c?escHtml(c.company):''}" placeholder="公司名稱"></div>
+    <div class="form-field"><div class="form-label">電話</div><input class="form-input" id="fi_phone" type="tel" value="${c?escHtml(c.phone):''}" placeholder="0912-000-000"></div>
+    <div class="form-field"><div class="form-label">生日</div><input class="form-input" id="fi_birthday" type="date" value="${c?escHtml(c.birthday||''):''}"></div>
+    <div class="form-field"><div class="form-label">地址</div><input class="form-input" id="fi_address" value="${c?escHtml(c.address||''):''}" placeholder="縣市、區、街道門號"></div>
+    <div class="form-field"><div class="form-label">負責地區</div><input class="form-input" id="fi_region" value="${c?escHtml(c.region||''):''}" placeholder="例：台北、台中、高雄"></div>
+    <div class="form-field"><div class="form-label">下次聯絡日期</div><input class="form-input" id="fi_nextContact" type="date" value="${c?escHtml(c.nextContact||''):''}"></div>
+    <div class="form-field"><div class="form-label">備註</div><textarea class="form-input" id="fi_note" rows="3" placeholder="記錄重要需求或備注…">${c?escHtml(c.note):''}</textarea></div>
+    <div class="form-field"><div class="form-label">客戶分級</div><div class="chips" id="tagChips">${TAGS.map(t=>`<button class="chip${t===editTagSel?' on':''}" onclick="pickTag('${t}')">${t} ${TAG_DESC[t]}</button>`).join('')}</div></div>
+  `;
+  const acts=document.getElementById('editActions');
+  if(c){acts.innerHTML=`<button class="btn-danger" onclick="confirmDelClient(${c.id})">刪除</button><button class="btn-fill" onclick="saveClient()">儲存</button>`;}
+  else{acts.innerHTML=`<button class="btn-outline" onclick="goBack()">取消</button><button class="btn-fill" onclick="saveClient()">新增客戶</button>`;}
+}
+function pickTag(t){editTagSel=t;document.querySelectorAll('#tagChips .chip').forEach(b=>b.classList.toggle('on',b.textContent.startsWith(t)))}
+function saveClient(){
+  const name=document.getElementById('fi_name').value.trim();if(!name){document.getElementById('fi_name').focus();return;}
+  const data={name,company:document.getElementById('fi_company').value.trim(),phone:document.getElementById('fi_phone').value.trim(),birthday:document.getElementById('fi_birthday').value.trim(),address:document.getElementById('fi_address').value.trim(),region:document.getElementById('fi_region').value.trim(),nextContact:document.getElementById('fi_nextContact').value.trim(),note:document.getElementById('fi_note').value.trim(),tag:editTagSel};
+  if(editId){Object.assign(clients.find(x=>x.id===editId),data);saveC();toast('客戶資料已更新');goBack();setTimeout(()=>openDetail(editId),50);}
+  else{clients.unshift({id:nextCid++,follows:[],...data});saveC();toast('新客戶已新增');goBack();}
+}
+function confirmDelClient(id){document.getElementById('overlay').classList.add('show');document.getElementById('dlgConfirm').onclick=()=>{clients=clients.filter(x=>x.id!==id);saveC();closeDialog();goBack();setTimeout(goBack,300);toast('客戶已刪除')}}
+
+// ── 保單列表 ──
+function renderPolicyList(){
+  const q=(document.getElementById('policyQ').value||'').toLowerCase();
+  const filtered=policies.filter(p=>{if(!q)return true;const c=clients.find(x=>x.id===p.clientId);return p.policyNo.toLowerCase().includes(q)||p.type.toLowerCase().includes(q)||p.insurer.toLowerCase().includes(q)||(c&&c.name.toLowerCase().includes(q));});
+  const el=document.getElementById('policyList');
+  if(!filtered.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>尚無保單資料</p></div>`;return;}
+  el.innerHTML=filtered.map(p=>{const c=clients.find(x=>x.id===p.clientId);return`<div class="policy-card" onclick="openPolicyDetail(${p.id})"><div class="policy-top"><div><div class="policy-type">${escHtml(p.type)}</div><div class="policy-num">${escHtml(p.policyNo)}</div></div><span style="font-size:11px;background:var(--accent-light);color:var(--accent-dark);padding:3px 9px;border-radius:var(--radius-pill);font-weight:500">${escHtml(p.insurer)}</span></div>${c?`<div class="policy-client-row"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escHtml(c.name)} · ${escHtml(c.company)}</div>`:''}<div class="policy-meta"><div class="policy-meta-item"><div class="policy-meta-label">年繳保費</div><div class="policy-meta-val">NT$ ${escHtml(p.premium)}</div></div><div class="policy-meta-item"><div class="policy-meta-label">生效日</div><div class="policy-meta-val">${escHtml(p.effectDate)}</div></div><div class="policy-meta-item"><div class="policy-meta-label">到期日</div><div class="policy-meta-val">${escHtml(p.expireDate)}</div></div><div class="policy-meta-item"><div class="policy-meta-label">保險公司</div><div class="policy-meta-val">${escHtml(p.insurer)}</div></div></div></div>`;}).join('');
+}
+function renderPolicyPerfs(p){
+  if(!p.perfs||!p.perfs.length)return`<div style="text-align:center;color:var(--text3);padding:16px;font-size:14px">尚無業績記錄</div>`;
+  const total=p.perfs.reduce((s,r)=>s+numVal(r.fyc),0);
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:13px;color:var(--text3)">累計 FYC</span><span style="font-size:16px;font-weight:700;color:var(--accent)">$${total.toLocaleString()}</span></div>`+
+  p.perfs.map((r,i)=>`<div class="follow-item" style="position:relative">
+    <div class="follow-date"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${r.date}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <div><div style="font-size:13px;color:var(--text2)">保費 $${escHtml(r.premium)}</div><div style="font-size:14px;font-weight:700;color:var(--accent);margin-top:2px">FYC $${escHtml(r.fyc)}</div></div>
+      <button onclick="delPolicyPerf(${p.id},${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:4px"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+    </div>
+  </div>`).join('');
+}
+function addPolicyPerf(policyId){
+  const premium=document.getElementById('pr_premium').value.trim();
+  const fyc=document.getElementById('pr_fyc').value.trim();
+  const date=document.getElementById('pr_date').value.trim();
+  if(!fyc){toast('請填寫 FYC 金額');return;}
+  const p=policies.find(x=>x.id===policyId);
+  if(!p.perfs)p.perfs=[];
+  p.perfs.unshift({id:Date.now(),premium,fyc,date:date||today()});
+  saveP();
+  document.getElementById('pr_premium').value='';
+  document.getElementById('pr_fyc').value='';
+  document.getElementById('pr_date').value='';
+  document.getElementById('perfRecords').innerHTML=renderPolicyPerfs(p);
+  toast('業績已記錄');
+}
+function delPolicyPerf(policyId,idx){
+  const p=policies.find(x=>x.id===policyId);
+  p.perfs.splice(idx,1);
+  saveP();
+  document.getElementById('perfRecords').innerHTML=renderPolicyPerfs(p);
+  toast('已刪除');
+}
+function openPolicyDetail(id){
+  currentPolicyId=id;const p=policies.find(x=>x.id===id);const c=clients.find(x=>x.id===p.clientId);
+  document.getElementById('policyDetailTitle').textContent=p.type;
+  document.getElementById('policyDetailBody').innerHTML=`
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:16px;margin-bottom:20px">
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px">${escHtml(p.type)}</div>
+      <div style="font-size:13px;color:var(--text3)">${escHtml(p.policyNo)}</div>
+    </div>
+    <div class="field-block"><div class="field-label">保險公司</div><div class="field-row"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>${escHtml(p.insurer)}</div></div>
+    <div class="field-block"><div class="field-label">年繳保費</div><div class="field-row"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>NT$ ${escHtml(p.premium)}</div></div>
+    <div class="field-block"><div class="field-label">生效日期</div><div class="field-row"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${escHtml(p.effectDate)}</div></div>
+    <div class="field-block"><div class="field-label">到期日</div><div class="field-row"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${escHtml(p.expireDate)}</div></div>
+    ${c?`<div class="field-block"><div class="field-label">保戶</div><div class="field-row" onclick="openDetail(${c.id})" style="cursor:pointer;color:var(--accent)"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escHtml(c.name)} · ${escHtml(c.company)}</div></div>`:''}
+    <div class="section-hd">業績記錄</div>
+    <div class="add-follow-box" style="margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><div style="font-size:12px;color:var(--text3);margin-bottom:4px">保費（元）</div><input class="form-input" id="pr_premium" placeholder="例：36,000" style="padding:8px 10px;font-size:14px"></div>
+        <div><div style="font-size:12px;color:var(--text3);margin-bottom:4px">FYC（元）*</div><input class="form-input" id="pr_fyc" placeholder="例：12,600" style="padding:8px 10px;font-size:14px"></div>
+      </div>
+      <div style="margin-bottom:8px"><div style="font-size:12px;color:var(--text3);margin-bottom:4px">日期</div><input class="form-input" id="pr_date" type="date" value="${today()}" style="padding:8px 10px;font-size:14px"></div>
+      <div class="save-row"><button class="btn-sm" onclick="addPolicyPerf(${id})">新增業績</button></div>
+    </div>
+    <div id="perfRecords">${renderPolicyPerfs(p)}</div>
+  `;
+  showScreen('policyDetailScreen');
+}
+function openAddPolicy(){editPolicyId=null;document.getElementById('policyEditTitle').textContent='新增保單';buildPolicyForm(null);showScreen('policyEditScreen')}
+function openEditPolicy(id){editPolicyId=id;const p=policies.find(x=>x.id===id);document.getElementById('policyEditTitle').textContent='編輯保單';buildPolicyForm(p);showScreen('policyEditScreen')}
+function buildPolicyForm(p){const opts=clients.map(c=>`<option value="${c.id}"${p&&p.clientId===c.id?' selected':''}>${escHtml(c.name)} — ${escHtml(c.company)}</option>`).join('');document.getElementById('policyEditBody').innerHTML=`<div class="form-field"><div class="form-label">保單號碼 *</div><input class="form-input" id="fp_no" value="${p?escHtml(p.policyNo):''}" placeholder="例：L2024-00123"></div><div class="form-field"><div class="form-label">險種 *</div><input class="form-input" id="fp_type" value="${p?escHtml(p.type):''}" placeholder="例：終身壽險、醫療險"></div><div class="form-field"><div class="form-label">年繳保費（元）</div><input class="form-input" id="fp_premium" value="${p?escHtml(p.premium):''}" placeholder="例：36,000"></div><div class="form-field"><div class="form-label">生效日期</div><input class="form-input" id="fp_effectDate" type="date" value="${p?escHtml(p.effectDate):''}"></div><div class="form-field"><div class="form-label">到期日</div><input class="form-input" id="fp_expireDate" type="date" value="${p?escHtml(p.expireDate):''}"></div><div class="form-field"><div class="form-label">保險公司</div><input class="form-input" id="fp_insurer" value="${p?escHtml(p.insurer):''}" placeholder="例：國泰人壽"></div><div class="form-field"><div class="form-label">保戶（連結客戶）</div><select class="form-input" id="fp_client"><option value="">— 選擇客戶 —</option>${opts}</select></div>`;const acts=document.getElementById('policyEditActions');if(p){acts.innerHTML=`<button class="btn-danger" onclick="confirmDelPolicy(${p.id})">刪除</button><button class="btn-fill" onclick="savePolicy()">儲存</button>`;}else{acts.innerHTML=`<button class="btn-outline" onclick="goBack()">取消</button><button class="btn-fill" onclick="savePolicy()">新增保單</button>`;}}
+function savePolicy(){const no=document.getElementById('fp_no').value.trim();const type=document.getElementById('fp_type').value.trim();if(!no||!type){toast('請填寫保單號碼和險種');return;}const cid=parseInt(document.getElementById('fp_client').value)||null;const data={policyNo:no,type,premium:document.getElementById('fp_premium').value.trim(),effectDate:document.getElementById('fp_effectDate').value.trim(),expireDate:document.getElementById('fp_expireDate').value.trim(),insurer:document.getElementById('fp_insurer').value.trim(),clientId:cid};if(editPolicyId){Object.assign(policies.find(x=>x.id===editPolicyId),data);saveP();toast('保單已更新');goBack();setTimeout(()=>openPolicyDetail(editPolicyId),50);}else{policies.unshift({id:nextPid++,perfs:[],...data});saveP();toast('保單已新增');goBack();}}
+function confirmDelPolicy(id){document.getElementById('overlay').classList.add('show');document.getElementById('dlgConfirm').onclick=()=>{policies=policies.filter(x=>x.id!==id);saveP();closeDialog();goBack();setTimeout(goBack,300);toast('保單已刪除')}}
+
+// ── 業績列表 ──
+function renderPerfList(){
+  const q=(document.getElementById('perfQ').value||'').toLowerCase();
+  const filtered=perfs.filter(p=>{if(!q)return true;const c=clients.find(x=>x.id===p.clientId);return p.insurer.toLowerCase().includes(q)||p.type.toLowerCase().includes(q)||(c&&c.name.toLowerCase().includes(q));});
+  filtered.sort((a,b)=>b.date.localeCompare(a.date));
+  const el=document.getElementById('perfList');
+  if(!filtered.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>尚無業績記錄</p></div>`;return;}
+  const totalFYC=filtered.reduce((s,p)=>s+numVal(p.fyc),0);
+  const totalPremium=filtered.reduce((s,p)=>s+numVal(p.premium),0);
+  let html=`<div class="grid2" style="margin-bottom:16px"><div class="stat-card"><div class="stat-label">總保費</div><div class="stat-val" style="font-size:16px">$${totalPremium.toLocaleString()}</div></div><div class="stat-card"><div class="stat-label">總 FYC</div><div class="stat-val" style="font-size:16px;color:var(--accent)">$${totalFYC.toLocaleString()}</div></div></div>`;
+  let lastMonth='';
+  filtered.forEach(p=>{
+    const month=p.date?p.date.slice(0,7):'';
+    if(month!==lastMonth){html+=`<div class="month-hd">${month}</div>`;lastMonth=month;}
+    const c=clients.find(x=>x.id===p.clientId);
+    html+=`<div class="perf-card" onclick="openPerfDetail(${p.id})">
+      <div class="perf-top"><div class="perf-type">${escHtml(p.type)}</div><div class="perf-date">${escHtml(p.date)}</div></div>
+      <div class="perf-fyc">FYC $${escHtml(p.fyc)}</div>
+      ${c?`<div class="perf-client"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escHtml(c.name)}</div>`:''}
+      <div class="perf-row"><div class="perf-item"><div class="perf-item-label">保險公司</div><div class="perf-item-val">${escHtml(p.insurer)}</div></div><div class="perf-item"><div class="perf-item-label">保費</div><div class="perf-item-val">$${escHtml(p.premium)}</div></div></div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+// ── 業績詳情 ──
+function openPerfDetail(id){
+  currentPerfId=id;const p=perfs.find(x=>x.id===id);const c=clients.find(x=>x.id===p.clientId);
+  document.getElementById('perfDetailTitle').textContent=p.type;
+  document.getElementById('perfDetailBody').innerHTML=`
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:16px;margin-bottom:20px">
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px">${escHtml(p.type)}</div>
+      <div style="font-size:13px;color:var(--text3)">${escHtml(p.insurer)} · ${escHtml(p.date)}</div>
+    </div>
+    <div class="grid2"><div class="stat-card"><div class="stat-label">年繳保費</div><div class="stat-val" style="font-size:18px">$${escHtml(p.premium)}</div></div><div class="stat-card"><div class="stat-label">FYC</div><div class="stat-val" style="font-size:18px;color:var(--accent)">$${escHtml(p.fyc)}</div></div></div>
+    <div class="field-block"><div class="field-label">保險公司</div><div class="field-row"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>${escHtml(p.insurer)}</div></div>
+    <div class="field-block"><div class="field-label">成交日期</div><div class="field-row"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${escHtml(p.date)}</div></div>
+    ${c?`<div class="field-block"><div class="field-label">客戶</div><div class="field-row" onclick="openDetail(${c.id})" style="cursor:pointer;color:var(--accent)"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escHtml(c.name)} · ${escHtml(c.company)}</div></div>`:''}
+  `;
+  showScreen('perfDetailScreen');
+}
+
+// ── 編輯業績 ──
+function openAddPerf(){editPerfId=null;document.getElementById('perfEditTitle').textContent='新增業績';buildPerfForm(null);showScreen('perfEditScreen')}
+function openEditPerf(id){editPerfId=id;const p=perfs.find(x=>x.id===id);document.getElementById('perfEditTitle').textContent='編輯業績';buildPerfForm(p);showScreen('perfEditScreen')}
+function buildPerfForm(p){
+  const opts=clients.map(c=>`<option value="${c.id}"${p&&p.clientId===c.id?' selected':''}>${escHtml(c.name)} — ${escHtml(c.company)}</option>`).join('');
+  document.getElementById('perfEditBody').innerHTML=`
+    <div class="form-field"><div class="form-label">保險公司 *</div><input class="form-input" id="pe_insurer" value="${p?escHtml(p.insurer):''}" placeholder="例：國泰人壽"></div>
+    <div class="form-field"><div class="form-label">險種 *</div><input class="form-input" id="pe_type" value="${p?escHtml(p.type):''}" placeholder="例：終身壽險、醫療險"></div>
+    <div class="form-field"><div class="form-label">保費（元）</div><input class="form-input" id="pe_premium" value="${p?escHtml(p.premium):''}" placeholder="例：36,000"></div>
+    <div class="form-field"><div class="form-label">FYC（元）</div><input class="form-input" id="pe_fyc" value="${p?escHtml(p.fyc):''}" placeholder="例：12,600"></div>
+    <div class="form-field"><div class="form-label">成交日期</div><input class="form-input" id="pe_date" type="date" value="${p?escHtml(p.date):today()}"></div>
+    <div class="form-field"><div class="form-label">連結客戶</div><select class="form-input" id="pe_client"><option value="">— 選擇客戶 —</option>${opts}</select></div>
+  `;
+  const acts=document.getElementById('perfEditActions');
+  if(p){acts.innerHTML=`<button class="btn-danger" onclick="confirmDelPerf(${p.id})">刪除</button><button class="btn-fill" onclick="savePerf()">儲存</button>`;}
+  else{acts.innerHTML=`<button class="btn-outline" onclick="goBack()">取消</button><button class="btn-fill" onclick="savePerf()">新增業績</button>`;}
+}
+function savePerf(){
+  const insurer=document.getElementById('pe_insurer').value.trim();const type=document.getElementById('pe_type').value.trim();
+  if(!insurer||!type){toast('請填寫保險公司和險種');return;}
+  const cid=parseInt(document.getElementById('pe_client').value)||null;
+  const data={insurer,type,premium:document.getElementById('pe_premium').value.trim(),fyc:document.getElementById('pe_fyc').value.trim(),date:document.getElementById('pe_date').value.trim(),clientId:cid};
+  if(editPerfId){Object.assign(perfs.find(x=>x.id===editPerfId),data);savePerf_();toast('業績已更新');goBack();setTimeout(()=>openPerfDetail(editPerfId),50);}
+  else{perfs.unshift({id:nextPerfId++,...data});savePerf_();toast('業績已新增');goBack();}
+}
+function savePerf_(){saveP()}
+function confirmDelPerf(id){document.getElementById('overlay').classList.add('show');document.getElementById('dlgConfirm').onclick=()=>{perfs=perfs.filter(x=>x.id!==id);savePerf_();closeDialog();goBack();setTimeout(goBack,300);toast('業績已刪除')}}
+
+// ── 追蹤紀錄 ──
+function renderFollow(){
+  const all=[];clients.forEach(c=>c.follows.forEach(f=>all.push({...f,client:c})));all.sort((a,b)=>b.date.localeCompare(a.date));
+  const el=document.getElementById('followBody');
+  if(!all.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>尚無追蹤紀錄</p></div>`;return;}
+  el.innerHTML=all.slice(0,30).map(f=>{const ac=av(f.client.id);return`<div class="timeline-item" onclick="openDetail(${f.client.id})"><div class="tl-avatar" style="background:${ac[0]};color:${ac[1]}">${avatarLabel(f.client)}</div><div class="tl-body"><div class="tl-header"><div class="tl-name">${escHtml(f.client.name)} <span style="font-weight:400;color:var(--text3);font-size:12px">· ${escHtml(f.client.company)}</span></div><div class="tl-date">${f.date}</div></div><div class="tl-note">${escHtml(f.note)}</div></div></div>`;}).join('');
+}
+
+// ── 總覽 ──
+function renderStats(){
+  const counts={};TAGS.forEach(t=>counts[t]=0);clients.forEach(c=>counts[c.tag]=(counts[c.tag]||0)+1);
+  const total=clients.length;
+  const totalPolicies=policies.length;
+  const allPerfs=policies.flatMap(p=>p.perfs||[]);
+  const totalFYC=allPerfs.reduce((s,r)=>s+numVal(r.fyc),0);
+  const totalPremiumPerf=allPerfs.reduce((s,r)=>s+numVal(r.premium),0);
+  const el=document.getElementById('statsBody');
+  el.innerHTML=`
+    <div class="grid2">
+      <div class="stat-card"><div class="stat-label">客戶總數</div><div class="stat-val">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">A級成交</div><div class="stat-val">${counts['A級']||0}</div></div>
+      <div class="stat-card"><div class="stat-label">累計 FYC</div><div class="stat-val" style="font-size:16px;color:var(--accent)">$${totalFYC.toLocaleString()}</div></div>
+      <div class="stat-card"><div class="stat-label">業績保費</div><div class="stat-val" style="font-size:16px">$${totalPremiumPerf.toLocaleString()}</div></div>
+    </div>
+    <div class="section-hd" style="margin-top:4px">客戶分級分布</div>
+    ${TAGS.map(t=>{const n=counts[t]||0;const pct=total?Math.round(n/total*100):0;const s=TAG_STYLE[t]||{dot:'#A08060'};return`<div class="bar-row"><div class="bar-meta"><span style="font-weight:500">${t} <span style="font-weight:400;font-size:12px;color:var(--text3)">— ${TAG_DESC[t]}</span></span><span style="color:var(--text3)">${n} 人 · ${pct}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${s.dot}"></div></div></div>`}).join('')}
+    <div class="section-hd">近期業績</div>
+    ${allPerfs.length?allPerfs.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(r=>{const pol=policies.find(p=>(p.perfs||[]).includes(r));return`<div class="follow-item"><div class="follow-date"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${r.date}${pol?` · ${escHtml(pol.type)}`:''}</div><div style="display:flex;justify-content:space-between;margin-top:4px"><span style="font-size:13px;color:var(--text2)">保費 $${escHtml(r.premium)}</span><span style="font-size:14px;font-weight:700;color:var(--accent)">FYC $${escHtml(r.fyc)}</span></div></div>`;}).join(''):`<div style="text-align:center;color:var(--text3);padding:16px;font-size:14px">尚無業績記錄</div>`}
+  `;
+}
+
+// ── 代辦事項 ──
+const TODO_PRIORITY={'高':{bg:'#FEE2E2',color:'#991B1B'},'中':{bg:'#FFF3CD',color:'#7A4900'},'低':{bg:'#E6F1FB',color:'#0C447C'}};
+const TODO_STATUS=['全部','待處理','進行中','完成'];
+let todoFilter='全部';let editTodoId=null;
+
+function loadTodos(){try{const r=localStorage.getItem('crm_todos');if(r)return JSON.parse(r);}catch(e){}return[];}
+function saveTodos(){localStorage.setItem('crm_todos',JSON.stringify(todos))}
+let todos=loadTodos();
+let nextTodoId=todos.reduce((m,t)=>Math.max(m,t.id),0)+1;
+
+function renderTodoFilter(){
+  const row=document.getElementById('todoFilterRow');
+  if(!row)return;
+  row.innerHTML=TODO_STATUS.map(s=>`<button class="tag-pill${s===todoFilter?' on':''}" onclick="todoFilter='${s}';renderTodoFilter();renderTodoList()" style="font-size:12px;padding:4px 12px">${s}</button>`).join('');
+}
+function renderTodoList(){
+  renderTodoFilter();
+  let filtered=todos.filter(t=>todoFilter==='全部'||t.status===todoFilter);
+  filtered.sort((a,b)=>{
+    const po={'高':0,'中':1,'低':2};
+    if(a.status==='完成'&&b.status!=='完成')return 1;
+    if(b.status==='完成'&&a.status!=='完成')return -1;
+    return(po[a.priority]||1)-(po[b.priority]||1);
+  });
+  const el=document.getElementById('todoList');
+  if(!filtered.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><p>沒有代辦事項</p></div>`;return;}
+  const overdue=d=>d&&d<today()&&d!=='';
+  el.innerHTML=filtered.map(t=>{
+    const c=clients.find(x=>x.id===t.clientId);
+    const pr=TODO_PRIORITY[t.priority]||{bg:'#F5EDE3',color:'#6B4C2A'};
+    const done=t.status==='完成';
+    return`<div class="todo-card">
+      <div class="todo-check${done?' done':''}" onclick="toggleTodo(${t.id})">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="todo-body" onclick="openEditTodo(${t.id})">
+        <div class="todo-title${done?' done':''}">${escHtml(t.title)}</div>
+        <div class="todo-meta">
+          <span class="priority-badge" style="background:${pr.bg};color:${pr.color}">${t.priority}</span>
+          <span class="status-badge">${t.status}</span>
+          ${t.dueDate?`<span class="todo-due${overdue(t.dueDate)?' overdue':''}"><svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${t.dueDate}${overdue(t.dueDate)?' ⚠️':''}</span>`:''}
+          ${c?`<span style="font-size:11px;color:var(--accent);font-weight:500">${escHtml(c.name)}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleTodo(id){
+  const t=todos.find(x=>x.id===id);
+  t.status=t.status==='完成'?'待處理':'完成';
+  saveTodos();renderTodoList();toast(t.status==='完成'?'已完成！':'已重新開啟');
+}
+function openAddTodo(){editTodoId=null;document.getElementById('todoEditTitle').textContent='新增代辦';buildTodoForm(null);showScreen('todoEditScreen')}
+function openEditTodo(id){editTodoId=id;const t=todos.find(x=>x.id===id);document.getElementById('todoEditTitle').textContent='編輯代辦';buildTodoForm(t);showScreen('todoEditScreen')}
+function buildTodoForm(t){
+  const opts=clients.map(c=>`<option value="${c.id}"${t&&t.clientId===c.id?' selected':''}>${escHtml(c.name)} — ${escHtml(c.company)}</option>`).join('');
+  document.getElementById('todoEditBody').innerHTML=`
+    <div class="form-field"><div class="form-label">待辦內容 *</div><input class="form-input" id="td_title" value="${t?escHtml(t.title):''}" placeholder="輸入待辦事項…"></div>
+    <div class="form-field"><div class="form-label">截止日期</div><input class="form-input" id="td_due" type="date" value="${t?escHtml(t.dueDate||''):''}"></div>
+    <div class="form-field"><div class="form-label">優先級</div>
+      <div class="chips" id="tdPriority">${['高','中','低'].map(p=>`<button class="chip${(t?t.priority:'')=== p?' on':p==='中'&&!t?' on':''}" onclick="document.querySelectorAll('#tdPriority .chip').forEach(b=>b.classList.remove('on'));this.classList.add('on')">${p}</button>`).join('')}</div></div>
+    <div class="form-field"><div class="form-label">狀態</div>
+      <select class="form-input" id="td_status">
+        <option value="待處理"${!t||t.status==='待處理'?' selected':''}>待處理</option>
+        <option value="進行中"${t&&t.status==='進行中'?' selected':''}>進行中</option>
+        <option value="完成"${t&&t.status==='完成'?' selected':''}>完成</option>
+      </select></div>
+    <div class="form-field"><div class="form-label">連結客戶</div><select class="form-input" id="td_client"><option value="">— 選擇客戶 —</option>${opts}</select></div>
+  `;
+  const acts=document.getElementById('todoEditActions');
+  if(t){acts.innerHTML=`<button class="btn-danger" onclick="deleteTodo(${t.id})">刪除</button><button class="btn-fill" onclick="saveTodo()">儲存</button>`;}
+  else{acts.innerHTML=`<button class="btn-outline" onclick="goBack()">取消</button><button class="btn-fill" onclick="saveTodo()">新增代辦</button>`;}
+}
+function saveTodo(){
+  const title=document.getElementById('td_title').value.trim();
+  if(!title){document.getElementById('td_title').focus();return;}
+  const priority=document.querySelector('#tdPriority .chip.on')?.textContent||'中';
+  const data={title,dueDate:document.getElementById('td_due').value.trim(),priority,status:document.getElementById('td_status').value,clientId:parseInt(document.getElementById('td_client').value)||null};
+  if(editTodoId){Object.assign(todos.find(x=>x.id===editTodoId),data);saveTodos();toast('代辦已更新');goBack();}
+  else{todos.unshift({id:nextTodoId++,...data});saveTodos();toast('代辦已新增');goBack();}
+  renderTodoList();
+}
+function deleteTodo(id){
+  todos=todos.filter(x=>x.id!==id);saveTodos();goBack();renderTodoList();toast('代辦已刪除');
+}
+
+// ── 行事曆 ──
+function addToCalendar(name,date){
+  const d=date.replace(/-/g,'');
+  const ics=[
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//兜式保客戶資料庫//TW',
+    'BEGIN:VEVENT',
+    'UID:'+d+'-'+Math.random().toString(36).slice(2)+'@crm',
+    'DTSTAMP:'+new Date().toISOString().replace(/[-:.]/g,'').slice(0,15)+'Z',
+    'DTSTART;VALUE=DATE:'+d,
+    'DTEND;VALUE=DATE:'+d,
+    'SUMMARY:聯絡客戶：'+name,
+    'DESCRIPTION:兜式保客戶資料庫 — 預約聯絡 '+name,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='聯絡_'+name+'_'+date+'.ics';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('行事曆檔案已下載，點開即可加入');
+}
+
+// ── 匯出 ──
+function exportData(){
+  const blob=new Blob([JSON.stringify({clients,policies,perfs},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='crm_backup_'+today()+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('資料已匯出（含保單＋業績）');
+}
+
+initTagsRow();initApp();
+</script>
+</body>
+</html>
