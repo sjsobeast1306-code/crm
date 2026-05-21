@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="兜式保客戶資料庫">
+<meta name="theme-color" content="#B8895A">
+<title>兜式保客戶資料庫</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --accent:#B8895A;--accent-light:#F5EDE3;--accent-dark:#6B4C2A;
+  --bg:#F5EFE6;--surface:#FFFFFF;--surface2:#FDF6EC;
+  --text:#2C1A05;--text2:#5C3D10;--text3:#A08060;
+  --border:#E8D8C4;--border2:#D4B896;
+  --sidebar:#2C1A05;--sidebar-text:#F5EDE3;--sidebar-active:#B8895A;
+  --danger:#D93025;--warn:#EA8600;--ok:#27AE60;
+  --radius:10px;--radius-sm:6px;--radius-pill:99px;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+  --shadow-lg:0 4px 20px rgba(0,0,0,.12);
+}
+html,body{height:100%;overflow:hidden;font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+
+/* ── Layout ── */
+#app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;transition:width .25s}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-logo-title{font-size:15px;font-weight:700;color:#F5EDE3;line-height:1.3}
+.sidebar-logo-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px}
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.nav-section{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.08em;padding:12px 10px 6px;text-transform:uppercase}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:none;background:none;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;font-family:inherit;font-weight:500;transition:all .15s;text-align:left;margin-bottom:2px}
+.nav-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-btn.on{background:var(--sidebar-active);color:#fff}
+.nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:var(--radius-pill)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topnav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.topnav-title{font-size:18px;font-weight:700;color:var(--text);flex:1}
+.topnav-search{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 12px;height:34px;min-width:220px}
+.topnav-search svg{width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.topnav-search input{border:none;background:transparent;font-size:13px;color:var(--text);outline:none;font-family:inherit;width:100%}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* ── Stat cards ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:var(--surface);border-radius:var(--radius);padding:16px 18px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.stat-label{font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.stat-val{font-size:26px;font-weight:700;color:var(--text);line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.stat-val.accent{color:var(--accent)}
+.stat-val.danger{color:var(--danger)}
+.stat-val.ok{color:var(--ok)}
+
+/* ── Table ── */
+.table-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.table-toolbar{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.table-toolbar-title{font-size:14px;font-weight:700;color:var(--text);flex:1}
+.filter-pills{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.filter-pills::-webkit-scrollbar{display:none}
+.pill{padding:4px 12px;border-radius:var(--radius-pill);font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .15s}
+.pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;white-space:nowrap}
+.btn:active{opacity:.8}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-danger{background:#FEE2E2;color:var(--danger)}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
+th{padding:10px 14px;text-align:left;font-size:12px;font-weight:600;color:var(--text3);white-space:nowrap;letter-spacing:.03em}
+td{padding:11px 14px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FDFAF5}
+.td-name{font-weight:500}
+.td-company{font-size:12px;color:var(--text3);margin-top:1px}
+.badge{display:inline-block;font-size:11px;font-weight:500;padding:3px 9px;border-radius:var(--radius-pill)}
+.td-actions{display:flex;gap:6px;justify-content:flex-end}
+.action-btn{width:28px;height:28px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.action-btn:hover{background:var(--surface2)}
+.action-btn svg{width:14px;height:14px;stroke:var(--text2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.action-btn.del:hover{background:#FEE2E2;border-color:#FCA5A5}
+.action-btn.del:hover svg{stroke:var(--danger)}
+.empty-row td{text-align:center;padding:48px;color:var(--text3)}
+.table-footer{padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);display:flex;align-items:center;justify-content:space-between}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);transform:translateY(10px);transition:transform .2s}
+.modal-overlay.show .modal{transform:translateY(0)}
+.modal-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-title{font-size:16px;font-weight:700;color:var(--text)}
+.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-close svg{width:16px;height:16px;stroke:var(--text2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.modal-body{flex:1;overflow-y:auto;padding:18px 20px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.form-row.full{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:12px;font-weight:500;color:var(--text2)}
+.form-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;font-size:14px;color:var(--text);outline:none;font-family:inherit;transition:border-color .15s;width:100%}
+.form-input:focus{border-color:var(--accent)}
+textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
+select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23A08060' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px}
+.chips-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chip{padding:5px 12px;border-radius:var(--radius-pill);font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .15s}
+.chip.on{background:var(--accent-light);border-color:var(--accent);color:var(--accent-dark)}
+
+/* ── Detail panel (slide in) ── */
+.detail-panel{position:fixed;top:0;right:0;bottom:0;width:480px;background:var(--surface);box-shadow:-4px 0 24px rgba(0,0,0,.12);z-index:90;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+.detail-panel.open{transform:translateX(0)}
+.detail-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.detail-back{width:34px;height:34px;border-radius:50%;border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.detail-back svg{width:16px;height:16px;stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.detail-title{font-size:16px;font-weight:700;color:var(--text);flex:1}
+.detail-body{flex:1;overflow-y:auto;padding:20px}
+.detail-section{margin-bottom:20px}
+.detail-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.detail-field{display:flex;flex-direction:column;gap:3px}
+.detail-field-label{font-size:11px;color:var(--text3)}
+.detail-field-val{font-size:14px;color:var(--text);font-weight:500}
+.follow-item{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;position:relative}
+.follow-date{font-size:11px;color:var(--text3);margin-bottom:3px}
+.follow-text{font-size:13px;color:var(--text);line-height:1.5}
+.follow-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+.follow-btn{width:22px;height:22px;border-radius:4px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.follow-btn svg{width:13px;height:13px;stroke:var(--text3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.follow-btn:hover svg{stroke:var(--accent)}
+.add-follow{background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);padding:10px;margin-bottom:10px}
+.add-follow textarea{width:100%;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:inherit;line-height:1.5;resize:none}
+.add-follow-footer{display:flex;justify-content:flex-end;margin-top:6px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#2C1A05;color:#fff;font-size:13px;padding:10px 20px;border-radius:var(--radius-pill);opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Confirm dialog ── */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.confirm-overlay.show{opacity:1;pointer-events:all}
+.confirm-box{background:var(--surface);border-radius:var(--radius);padding:24px;width:340px;box-shadow:var(--shadow-lg)}
+.confirm-title{font-size:16px;font-weight:700;margin-bottom:8px}
+.confirm-msg{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6}
+.confirm-btns{display:flex;gap:10px;justify-content:flex-end}
+
+/* ── Photo upload ── */
+.photo-area{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;cursor:pointer;background:var(--surface2);transition:border-color .15s}
+.photo-area:hover{border-color:var(--accent)}
+.photo-area svg{width:28px;height:28px;stroke:var(--text3);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 6px;display:block}
+.photo-previews{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.photo-preview{position:relative;width:70px;height:70px}
+.photo-preview img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border)}
+.photo-remove{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;font-size:12px;line-height:18px;text-align:center}
+
+/* ── Mobile responsive ── */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);width:240px}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:49}
+  .sidebar.open~.sidebar-overlay{display:block}
+  .main{width:100%}
+  .topnav{padding:0 16px}
+  .topnav-search{display:none}
+  .content{padding:14px 16px}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .stat-val{font-size:20px}
+  table thead{display:none}
+  table,tbody,tr,td{display:block}
+  tr{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;box-shadow:var(--shadow)}
+  tr:hover td{background:transparent}
+  td{border:none;padding:3px 0;font-size:13px}
+  td::before{content:attr(data-label);font-size:11px;color:var(--text3);display:block;margin-bottom:1px;font-weight:500}
+  .td-actions{justify-content:flex-start;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+  .detail-panel{width:100%}
+  .modal{max-width:100%;margin:0;border-radius:var(--radius) var(--radius) 0 0;max-height:95vh}
+  .modal-overlay{align-items:flex-end;padding:0}
+  .form-row{grid-template-columns:1fr}
+  .menu-btn{display:flex !important}
+  .table-footer .count{display:none}
+}
+.menu-btn{display:none;width:38px;height:38px;border-radius:var(--radius-sm);border:none;background:var(--surface2);cursor:pointer;align-items:center;justify-content:center}
+.menu-btn svg{width:20px;height:20px;stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-title">兜式保客戶資料庫</div>
+      <div class="sidebar-logo-sub">Insurance CRM · 2026</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">主選單</div>
+      <button class="nav-btn on" id="nav-clients" onclick="switchPage('clients')">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        客戶管理
+      </button>
+      <button class="nav-btn" id="nav-policies" onclick="switchPage('policies')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        保單管理
+      </button>
+      <button class="nav-btn" id="nav-follows" onclick="switchPage('follows')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        追蹤紀錄
+      </button>
+      <button class="nav-btn" id="nav-todos" onclick="switchPage('todos')">
+        <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        代辦事項
+        <span class="nav-badge" id="todoBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-btn" id="nav-claims" onclick="switchPage('claims')">
+        <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+        理賠記錄
+      </button>
+      <div class="nav-section">系統</div>
+      <button class="nav-btn" id="nav-stats" onclick="switchPage('stats')">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        業務總覽
+      </button>
+      <button class="nav-btn" onclick="exportData()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        匯出資料
+      </button>
+    </nav>
+  </aside>
+  <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topnav">
+      <button class="menu-btn" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="topnav-title" id="pageTitle">客戶管理</div>
+      <div class="topnav-search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="search" id="globalSearch" placeholder="搜尋…" oninput="handleSearch()">
+      </div>
+      <button class="btn btn-primary" id="addBtn" onclick="handleAdd()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        新增
+      </button>
+    </header>
+    <div class="content" id="mainContent">
+      <div style="text-align:center;padding:60px;color:var(--text3)">資料載入中…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <button class="detail-back" onclick="closeDetail()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="detail-title" id="detailPanelTitle">詳情</div>
+    <button class="btn btn-outline" onclick="handleEdit(currentDetailId)" style="padding:5px 12px;font-size:12px">編輯</button>
+  </div>
+  <div class="detail-body" id="detailPanelBody"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">新增</div>
+      <button class="modal-close" onclick="closeModal()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">確認刪除</div>
+    <div class="confirm-msg" id="confirmMsg">確定要刪除嗎？</div>
+    <div class="confirm-btns">
+      <button class="btn btn-outline" onclick="closeConfirm()">取消</button>
+      <button class="btn" style="background:var(--danger);color:#fff" id="confirmOk">刪除</button>
+    </div>
+  </div>
+</div>
+
+<div id="loginScreen" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#2C1A05 0%,#5C3D10 100%);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:56px;height:56px;background:#F5EDE3;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px">🔐</div>
+      <div style="font-size:20px;font-weight:700;color:#2C1A05;margin-bottom:6px">兜式保客戶資料庫</div>
+      <div style="font-size:13px;color:#A08060">請輸入密碼以繼續</div>
+    </div>
+    <input id="loginPw" type="password" placeholder="輸入密碼…"
+      style="width:100%;border:1.5px solid #E8D8C4;border-radius:8px;padding:12px 14px;font-size:16px;outline:none;font-family:inherit;margin-bottom:8px;transition:border-color .15s"
+      onfocus="this.style.borderColor='#B8895A'" onblur="this.style.borderColor='#E8D8C4'"
+      onkeydown="if(event.key==='Enter')tryLogin()">
+    <div id="loginError" style="display:none;color:#D93025;font-size:12px;margin-bottom:10px;text-align:center">密碼錯誤，請再試一次</div>
+    <button onclick="tryLogin()"
+      style="width:100%;background:#B8895A;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s"
+      onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">
+      進入系統
+    </button>
+  </div>
+</div>
+
+
+
+<script>
+// ── Constants ──
+const TAGS=['A級','B級','C級','D級'];
+const TAG_DESC={'A級':'成交','B級':'有機會','C級':'暫不考慮','D級':'沒機會'};
+const TAG_STYLE={'A級':{bg:'#EAF3DE',color:'#27500A'},'B級':{bg:'#FFF3CD',color:'#7A4900'},'C級':{bg:'#E6F1FB',color:'#0C447C'},'D級':{bg:'#F1EFE8',color:'#444441'}};
+const CLAIM_STATUS=['申請中','審核中','已完成','拒絕'];
+const CLAIM_STATUS_STYLE={'申請中':{bg:'#FFF3CD',color:'#7A4900'},'審核中':{bg:'#E6F1FB',color:'#0C447C'},'已完成':{bg:'#EAF3DE',color:'#27500A'},'拒絕':{bg:'#FEE2E2',color:'#991B1B'}};
+const TODO_PRIORITY_STYLE={'高':{bg:'#FEE2E2',color:'#991B1B'},'中':{bg:'#FFF3CD',color:'#7A4900'},'低':{bg:'#E6F1FB',color:'#0C447C'}};
+const NOTION_TOKEN='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';
+const NOTION_DB='3656677afa2b80cd8315dfb25471fd3f';
+const SUPABASE_URL='https://jcfnnxcqvqkcpirevlrl.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjZm5ueGNxdnFrY3BpcmV2bHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjY4OTMsImV4cCI6MjA5NDQ0Mjg5M30.yCAh_An9fQcs6FPs-3n_V15FHYByzrTiYdKrxRbsGZ8';
+const SB_HEADERS={'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
+
+// ── Data ──
+let clients=[],policies=[],claims=[],todos=[];
+let nextCid=1,nextPid=1,nextClaimId=1,nextTodoId=1;
+let currentPage='clients',currentDetailId=null,editingId=null,editTagSel='B級';
+let claimPhotos=[];let claimPdfs=[];let activeFilter='全部';
+
+const DEMO_C=[
+  {id:1,name:'陳大明',company:'創科科技有限公司',phone:'0912-345-678',birthday:'1985-03-15',address:'台北市信義區信義路五段7號',tag:'B級',region:'台北',nextContact:'2026-05-22',note:'對ERP系統有興趣',follows:[{date:'2026-05-10',note:'電話溝通確認需求。'},{date:'2026-04-28',note:'初次接觸，留下名片。'}]},
+  {id:2,name:'林美玲',company:'永豐貿易',phone:'0923-456-789',birthday:'1990-07-22',address:'台中市西屯區台灣大道三段99號',tag:'C級',region:'台中',nextContact:'2026-05-20',note:'在展覽上認識',follows:[{date:'2026-05-12',note:'傳送產品簡介資料。'}]},
+  {id:3,name:'張偉強',company:'建信建設',phone:'0934-567-890',birthday:'1978-11-08',address:'高雄市苓雅區四維三路2號',tag:'A級',region:'高雄',nextContact:'',note:'已完成簽約',follows:[{date:'2026-05-14',note:'討論第二期擴充計劃。'}]},
+  {id:4,name:'李雅婷',company:'台灣好食品',phone:'0956-789-012',birthday:'1995-01-30',address:'新竹市東區光復路一段101號',tag:'B級',region:'新竹',nextContact:'2026-05-25',note:'由老客戶介紹',follows:[]},
+];
+const DEMO_P=[
+  {id:1,policyNo:'L2024-00123',type:'終身壽險',premium:'36,000',effectDate:'2024-03-01',expireDate:'2064-03-01',insurer:'國泰人壽',clientId:3,perfs:[{id:1,premium:'36,000',fyc:'12,600',date:'2024-03-01'}]},
+  {id:2,policyNo:'H2025-00456',type:'實支實付醫療險',premium:'18,500',effectDate:'2025-01-15',expireDate:'2026-01-15',insurer:'富邦人壽',clientId:3,perfs:[{id:1,premium:'18,500',fyc:'5,550',date:'2025-01-15'}]},
+  {id:3,policyNo:'A2025-00789',type:'意外傷害險',premium:'8,200',effectDate:'2025-06-01',expireDate:'2026-06-01',insurer:'新光人壽',clientId:1,perfs:[]},
+];
+
+// ── Supabase ──
+async function sbGet(t){
+  try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),3000);
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?select=*&order=id.asc&limit=1`,{headers:SB_HEADERS,signal:controller.signal});
+    clearTimeout(timeout);
+    if(!r.ok){const err=await r.json();throw new Error(`${t} (${r.status}): ${JSON.stringify(err)}`);}
+    const rows=await r.json();
+    if(rows&&rows.length>0)return JSON.parse(rows[0].data);
+    return null;
+  }catch(e){
+    console.warn('sbGet failed for',t,e.message);
+    return null;
+  }
+}
+async function sbSet(t,data){try{const c=await fetch(`${SUPABASE_URL}/rest/v1/${t}?select=id&limit=1`,{headers:SB_HEADERS});const rows=await c.json();const body=JSON.stringify({data:JSON.stringify(data),updated_at:new Date().toISOString()});if(rows&&rows.length>0){await fetch(`${SUPABASE_URL}/rest/v1/${t}?id=eq.${rows[0].id}`,{method:'PATCH',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body});}else{await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({data:JSON.stringify(data)})});}}catch(e){}}
+async function saveC(){
+  localStorage.setItem('crm_clients_local',JSON.stringify(clients));
+  try{await sbSet('clients',clients);}catch(e){}
+}
+async function saveP(){
+  localStorage.setItem('crm_policies_local',JSON.stringify(policies));
+  try{await sbSet('policies',policies);}catch(e){}
+}
+async function saveClaims(){
+  localStorage.setItem('crm_claims_local',JSON.stringify(claims));
+  try{await sbSet('claims',claims);}catch(e){}
+}
+
+// ── Utils ──
+function today(){return new Date().toISOString().slice(0,10)}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function badge(text,style){return`<span class="badge" style="background:${style.bg};color:${style.color}">${escHtml(text)}</span>`}
+function numVal(s){return parseInt((s||'').replace(/[^0-9]/g,''))||0}
+let toastT;
+function toast(msg,dur=2200){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),dur)}
+function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('show')}
+function confirm_(title,msg,fn){document.getElementById('confirmTitle').textContent=title;document.getElementById('confirmMsg').textContent=msg;document.getElementById('confirmOk').onclick=()=>{closeConfirm();fn()};document.getElementById('confirmOverlay').classList.add('show')}
+
+// ── Sidebar ──
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open')}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open')}
+
+// ── Navigation ──
+function switchPage(page){
+  currentPage=page;activeFilter='全部';
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  const nb=document.getElementById('nav-'+page);if(nb)nb.classList.add('on');
+  const titles={clients:'客戶管理',policies:'保單管理',follows:'追蹤紀錄',todos:'代辦事項',claims:'理賠記錄',stats:'業務總覽'};
+  document.getElementById('pageTitle').textContent=titles[page]||page;
+  document.getElementById('globalSearch').value='';
+  document.getElementById('addBtn').style.display=['stats','follows'].includes(page)?'none':'flex';
+  closeDetail();closeSidebar();
+  renderPage();
+}
+function handleSearch(){renderPage()}
+function handleAdd(){
+  if(currentPage==='clients')openClientModal(null);
+  else if(currentPage==='policies')openPolicyModal(null);
+  else if(currentPage==='todos')openTodoModal(null);
+  else if(currentPage==='claims')openClaimModal(null);
+}
+function handleEdit(id){
+  if(currentPage==='clients')openClientModal(id);
+  else if(currentPage==='policies')openPolicyModal(id);
+  else if(currentPage==='todos')openTodoModal(id);
+  else if(currentPage==='claims')openClaimModal(id);
+}
+
+// ── Modal ──
+function openModal(title,bodyHtml,footerHtml){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=bodyHtml;document.getElementById('modalFooter').innerHTML=footerHtml;document.getElementById('modal').classList.add('show')}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});
+
+// ── Detail Panel ──
+function openDetail(id){currentDetailId=id;document.getElementById('detailPanel').classList.add('open');renderDetail(id)}
+function closeDetail(){document.getElementById('detailPanel').classList.remove('open');currentDetailId=null}
+
+// ── Render ──
+function renderPage(){
+  const q=(document.getElementById('globalSearch').value||'').toLowerCase();
+  if(currentPage==='clients')renderClients(q);
+  else if(currentPage==='policies')renderPolicies(q);
+  else if(currentPage==='follows')renderFollows(q);
+  else if(currentPage==='todos')renderTodos(q);
+  else if(currentPage==='claims')renderClaims(q);
+  else if(currentPage==='stats')renderStats();
+}
+
+// ── Clients ──
+function renderClients(q=''){
+  const filtered=clients.filter(c=>(activeFilter==='全部'||c.tag===activeFilter)&&(!q||c.name.toLowerCase().includes(q)||c.company.toLowerCase().includes(q)||c.region?.toLowerCase().includes(q)));
+  const pills=['全部',...TAGS].map(t=>`<button class="pill${t===activeFilter?' on':''}" onclick="activeFilter='${t}';renderPage()">${t}${t!=='全部'?` <span style="opacity:.6;font-size:10px">${TAG_DESC[t]||''}</span>`:''}</button>`).join('');
+  document.getElementById('mainContent').innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">客戶總數</div><div class="stat-val">${clients.length}</div></div>
+      <div class="stat-card"><div class="stat-label">A級成交</div><div class="stat-val ok">${clients.filter(c=>c.tag==='A級').length}</div></div>
+      <div class="stat-card"><div class="stat-label">B級潛力</div><div class="stat-val accent">${clients.filter(c=>c.tag==='B級').length}</div></div>
+      <div class="stat-card"><div class="stat-label">今日待聯絡</div><div class="stat-val danger">${clients.filter(c=>c.nextContact===today()).length}</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">客戶列表</div>
+        <div class="filter-pills">${pills}</div>
+      </div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>客戶</th><th>電話</th><th>地區</th><th>分級</th><th>下次聯絡</th><th>保單數</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody>${filtered.length?filtered.map(c=>{
+          const pc=policies.filter(p=>p.clientId===c.id).length;
+          const ts=TAG_STYLE[c.tag]||{bg:'#F5EDE3',color:'#6B4C2A'};
+          const overdue=c.nextContact&&c.nextContact<today();
+          return`<tr onclick="openDetail(${c.id})" style="cursor:pointer">
+            <td data-label="客戶"><div class="td-name">${escHtml(c.name)}</div><div class="td-company">${escHtml(c.company)}</div></td>
+            <td data-label="電話">${escHtml(c.phone)}</td>
+            <td data-label="地區">${escHtml(c.region||'—')}</td>
+            <td data-label="分級">${badge(c.tag,ts)}</td>
+            <td data-label="下次聯絡" style="${overdue?'color:var(--danger);font-weight:500':''}">
+              ${c.nextContact||'—'}${overdue?' ⚠️':''}
+              ${c.nextContact?`<button onclick="event.stopPropagation();addToCalendar('${escHtml(c.name)}','${escHtml(c.nextContact)}')" style="margin-left:6px;font-size:10px;background:var(--accent-light);color:var(--accent-dark);border:none;border-radius:4px;padding:2px 6px;cursor:pointer">📅</button>`:''}
+            </td>
+            <td data-label="保單數">${pc?`<span style="background:var(--accent-light);color:var(--accent-dark);padding:2px 8px;border-radius:var(--radius-pill);font-size:11px;font-weight:500">${pc}張</span>`:'—'}</td>
+            <td data-label="操作"><div class="td-actions">
+              <button class="action-btn" onclick="event.stopPropagation();openClientModal(${c.id})" title="編輯"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="action-btn del" onclick="event.stopPropagation();confirm_('刪除客戶','確定要刪除「${escHtml(c.name)}」嗎？',async()=>{clients=clients.filter(x=>x.id!==${c.id});await saveC();renderPage();toast('已刪除')})" title="刪除"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+            </div></td>
+          </tr>`;
+        }).join(''):
+        `<tr class="empty-row"><td colspan="7">沒有符合的客戶</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+      <div class="table-footer"><span class="count">${filtered.length} 筆資料</span></div>
+    </div>`;
+}
+
+function renderDetail(id){
+  const c=clients.find(x=>x.id===id);if(!c)return;
+  document.getElementById('detailPanelTitle').textContent=c.name;
+  const cp=policies.filter(p=>p.clientId===id);
+  const ts=TAG_STYLE[c.tag]||{bg:'#F5EDE3',color:'#6B4C2A'};
+  document.getElementById('detailPanelBody').innerHTML=`
+    <div class="detail-section">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="width:48px;height:48px;border-radius:50%;background:${ts.bg};color:${ts.color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0">${(c.region||c.name).slice(0,2)}</div>
+        <div><div style="font-size:18px;font-weight:700">${escHtml(c.name)}</div><div style="font-size:13px;color:var(--text3)">${escHtml(c.company)}</div></div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-field"><div class="detail-field-label">分級</div><div>${badge(c.tag,ts)} <span style="font-size:11px;color:var(--text3)">${TAG_DESC[c.tag]||''}</span></div></div>
+        <div class="detail-field"><div class="detail-field-label">地區</div><div class="detail-field-val">${escHtml(c.region||'—')}</div></div>
+        <div class="detail-field"><div class="detail-field-label">電話</div><div class="detail-field-val">${escHtml(c.phone)}</div></div>
+        <div class="detail-field"><div class="detail-field-label">生日</div><div class="detail-field-val">${escHtml(c.birthday||'—')}</div></div>
+        <div class="detail-field" style="grid-column:1/-1"><div class="detail-field-label">地址</div><div class="detail-field-val">${escHtml(c.address||'—')}</div></div>
+        ${c.nextContact?`<div class="detail-field" style="grid-column:1/-1"><div class="detail-field-label">下次聯絡日期</div><div style="display:flex;align-items:center;gap:8px"><div class="detail-field-val">${escHtml(c.nextContact)}</div><button onclick="addToCalendar('${escHtml(c.name)}','${escHtml(c.nextContact)}')" class="btn btn-outline" style="padding:3px 10px;font-size:11px">📅 加入行事曆</button></div></div>`:''}
+        ${c.note?`<div class="detail-field" style="grid-column:1/-1"><div class="detail-field-label">備註</div><div class="detail-field-val" style="font-weight:400">${escHtml(c.note)}</div></div>`:''}
+      </div>
+    </div>
+    ${cp.length?`<div class="detail-section"><div class="detail-section-title">保單 (${cp.length})</div>${cp.map(p=>`<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer" onclick="currentPage='policies';openDetail(${p.id})"><div style="font-weight:500;font-size:13px">${escHtml(p.type)}</div><div style="font-size:12px;color:var(--text3);margin-top:2px">${escHtml(p.policyNo)} · ${escHtml(p.insurer)} · NT$${escHtml(p.premium)}</div></div>`).join('')}</div>`:''}
+    <div class="detail-section">
+      <div class="detail-section-title">追蹤紀錄</div>
+      <div class="add-follow">
+        <textarea id="newFollowNote" rows="2" placeholder="新增追蹤記錄…"></textarea>
+        <div class="add-follow-footer"><button class="btn btn-primary" style="padding:5px 14px;font-size:12px" onclick="addFollow(${id})">儲存</button></div>
+      </div>
+      <div id="followsList">${renderFollowItems(c)}</div>
+    </div>
+  `;
+}
+
+function renderFollowItems(c){
+  if(!c.follows.length)return`<div style="text-align:center;color:var(--text3);padding:16px;font-size:13px">尚無追蹤紀錄</div>`;
+  return c.follows.map((f,i)=>`<div class="follow-item">
+    <div class="follow-actions">
+      <button class="follow-btn" onclick="editFollowItem(${c.id},${i})"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="follow-btn" onclick="deleteFollowItem(${c.id},${i})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+    </div>
+    <div class="follow-date">${f.date}</div>
+    <div class="follow-text">${escHtml(f.note)}</div>
+  </div>`).join('');
+}
+async function addFollow(id){
+  const ta=document.getElementById('newFollowNote');const note=ta.value.trim();if(!note)return;
+  const c=clients.find(x=>x.id===id);c.follows.unshift({date:today(),note});await saveC();ta.value='';
+  document.getElementById('followsList').innerHTML=renderFollowItems(c);toast('追蹤紀錄已儲存');
+}
+function editFollowItem(clientId,idx){
+  const c=clients.find(x=>x.id===clientId);const f=c.follows[idx];
+  const el=document.querySelectorAll('.follow-item')[idx];
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:6px">
+    <input class="form-input" id="ef_date" type="date" value="${f.date}" style="font-size:12px;padding:5px 8px">
+    <textarea class="form-input" id="ef_note" rows="2" style="font-size:12px">${escHtml(f.note)}</textarea>
+    <div style="display:flex;gap:6px;justify-content:flex-end">
+      <button class="btn btn-outline" style="padding:4px 12px;font-size:12px" onclick="renderDetail(${clientId})">取消</button>
+      <button class="btn btn-primary" style="padding:4px 12px;font-size:12px" onclick="saveFollowItem(${clientId},${idx})">儲存</button>
+    </div>
+  </div>`;
+}
+async function saveFollowItem(clientId,idx){
+  const c=clients.find(x=>x.id===clientId);
+  c.follows[idx]={date:document.getElementById('ef_date').value,note:document.getElementById('ef_note').value.trim()};
+  await saveC();renderDetail(clientId);toast('已更新');
+}
+async function deleteFollowItem(clientId,idx){
+  const c=clients.find(x=>x.id===clientId);c.follows.splice(idx,1);await saveC();
+  document.getElementById('followsList').innerHTML=renderFollowItems(c);toast('已刪除');
+}
+
+// ── Client Modal ──
+function openClientModal(id){
+  editingId=id;const c=id?clients.find(x=>x.id===id):null;editTagSel=c?c.tag:'B級';
+  const body=`
+    <div class="form-row"><div class="form-group"><div class="form-label">姓名 *</div><input class="form-input" id="fi_name" value="${c?escHtml(c.name):''}"></div><div class="form-group"><div class="form-label">公司</div><input class="form-input" id="fi_company" value="${c?escHtml(c.company):''}"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">電話</div><input class="form-input" id="fi_phone" type="tel" value="${c?escHtml(c.phone):''}"></div><div class="form-group"><div class="form-label">生日</div><input class="form-input" id="fi_birthday" type="date" value="${c?escHtml(c.birthday||''):''}"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">負責地區</div><input class="form-input" id="fi_region" value="${c?escHtml(c.region||''):''}"></div><div class="form-group"><div class="form-label">下次聯絡日期</div><input class="form-input" id="fi_nextContact" type="date" value="${c?escHtml(c.nextContact||''):''}"></div></div>
+    <div class="form-row full"><div class="form-group"><div class="form-label">地址</div><input class="form-input" id="fi_address" value="${c?escHtml(c.address||''):''}"></div></div>
+    <div class="form-row full"><div class="form-group"><div class="form-label">備註</div><textarea class="form-input" id="fi_note">${c?escHtml(c.note):''}</textarea></div></div>
+    <div class="form-row full"><div class="form-group"><div class="form-label">客戶分級</div><div class="chips-wrap" id="tagChips">${TAGS.map(t=>`<button class="chip${t===editTagSel?' on':''}" onclick="editTagSel='${t}';document.querySelectorAll('#tagChips .chip').forEach(b=>b.classList.toggle('on',b.textContent.startsWith('${t}')))">${t} ${TAG_DESC[t]}</button>`).join('')}</div></div></div>
+  `;
+  const footer=c?`<button class="btn btn-danger" onclick="confirm_('刪除客戶','確定刪除「${escHtml(c.name)}」？',async()=>{clients=clients.filter(x=>x.id!==${c.id});await saveC();closeModal();closeDetail();renderPage();toast('已刪除')})">刪除</button><div style="flex:1"></div>`:''
+  +`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveClient()">儲存</button>`;
+  openModal(c?'編輯客戶':'新增客戶',body,footer);
+}
+async function saveClient(){
+  const name=document.getElementById('fi_name').value.trim();if(!name)return;
+  const data={name,company:document.getElementById('fi_company').value.trim(),phone:document.getElementById('fi_phone').value.trim(),birthday:document.getElementById('fi_birthday').value.trim(),region:document.getElementById('fi_region').value.trim(),nextContact:document.getElementById('fi_nextContact').value.trim(),address:document.getElementById('fi_address').value.trim(),note:document.getElementById('fi_note').value.trim(),tag:editTagSel};
+  if(editingId){Object.assign(clients.find(x=>x.id===editingId),data);}
+  else{clients.unshift({id:nextCid++,follows:[],...data});}
+  await saveC();closeModal();renderPage();if(editingId&&currentDetailId===editingId)renderDetail(editingId);toast('已儲存');
+}
+
+// ── Policies ──
+function renderPolicies(q=''){
+  const filtered=policies.filter(p=>{const c=clients.find(x=>x.id===p.clientId);return !q||p.type.toLowerCase().includes(q)||p.policyNo.toLowerCase().includes(q)||p.insurer.toLowerCase().includes(q)||(c&&c.name.toLowerCase().includes(q));});
+  const totalFYC=policies.flatMap(p=>p.perfs||[]).reduce((s,r)=>s+numVal(r.fyc),0);
+  document.getElementById('mainContent').innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">保單總數</div><div class="stat-val">${policies.length}</div></div>
+      <div class="stat-card"><div class="stat-label">累計 FYC</div><div class="stat-val accent">$${totalFYC.toLocaleString()}</div></div>
+      <div class="stat-card"><div class="stat-label">即將到期（30天）</div><div class="stat-val danger">${policies.filter(p=>{if(!p.expireDate)return false;const d=Math.floor((new Date(p.expireDate)-new Date())/86400000);return d>=0&&d<=30}).length}</div></div>
+      <div class="stat-card"><div class="stat-label">有業績記錄</div><div class="stat-val ok">${policies.filter(p=>p.perfs&&p.perfs.length).length}</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><div class="table-toolbar-title">保單列表</div></div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>保單號碼</th><th>險種</th><th>保戶</th><th>保險公司</th><th>年繳保費</th><th>生效日</th><th>到期日</th><th>FYC</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody>${filtered.length?filtered.map(p=>{
+          const c=clients.find(x=>x.id===p.clientId);
+          const fyc=p.perfs&&p.perfs.length?p.perfs.reduce((s,r)=>s+numVal(r.fyc),0):0;
+          const expireSoon=p.expireDate&&Math.floor((new Date(p.expireDate)-new Date())/86400000)<=30;
+          return`<tr onclick="openDetail(${p.id})" style="cursor:pointer">
+            <td data-label="保單號碼" class="td-name">${escHtml(p.policyNo)}</td>
+            <td data-label="險種">${escHtml(p.type)}</td>
+            <td data-label="保戶">${c?escHtml(c.name):'—'}</td>
+            <td data-label="保險公司">${escHtml(p.insurer)}</td>
+            <td data-label="年繳保費">NT$ ${escHtml(p.premium)}</td>
+            <td data-label="生效日">${escHtml(p.effectDate)}</td>
+            <td data-label="到期日" style="${expireSoon?'color:var(--danger);font-weight:500':''}">${escHtml(p.expireDate)}${expireSoon?' ⚠️':''}</td>
+            <td data-label="FYC">${fyc?`<span style="color:var(--accent);font-weight:500">$${fyc.toLocaleString()}</span>`:'—'}</td>
+            <td data-label="操作"><div class="td-actions">
+              <button class="action-btn" onclick="event.stopPropagation();openPolicyModal(${p.id})"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="action-btn del" onclick="event.stopPropagation();confirm_('刪除保單','確定刪除此保單？',async()=>{policies=policies.filter(x=>x.id!==${p.id});await saveP();renderPage();toast('已刪除')})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div></td>
+          </tr>`;
+        }).join(''):`<tr class="empty-row"><td colspan="9">尚無保單資料</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+      <div class="table-footer"><span class="count">${filtered.length} 筆資料</span></div>
+    </div>`;
+}
+
+function renderDetail_policy(id){
+  const p=policies.find(x=>x.id===id);if(!p)return;
+  const c=clients.find(x=>x.id===p.clientId);
+  document.getElementById('detailPanelTitle').textContent=p.type;
+  document.getElementById('detailPanelBody').innerHTML=`
+    <div class="detail-section">
+      <div class="detail-grid">
+        <div class="detail-field"><div class="detail-field-label">保單號碼</div><div class="detail-field-val">${escHtml(p.policyNo)}</div></div>
+        <div class="detail-field"><div class="detail-field-label">保險公司</div><div class="detail-field-val">${escHtml(p.insurer)}</div></div>
+        <div class="detail-field"><div class="detail-field-label">年繳保費</div><div class="detail-field-val">NT$ ${escHtml(p.premium)}</div></div>
+        <div class="detail-field"><div class="detail-field-label">保戶</div><div class="detail-field-val" style="color:var(--accent);cursor:pointer" onclick="currentPage='clients';openDetail(${c?.id})">${c?escHtml(c.name):'—'}</div></div>
+        <div class="detail-field"><div class="detail-field-label">生效日期</div><div class="detail-field-val">${escHtml(p.effectDate)}</div></div>
+        <div class="detail-field"><div class="detail-field-label">到期日</div><div class="detail-field-val">${escHtml(p.expireDate)}</div></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">業績記錄</div>
+      ${renderPolicyPerfs(p)}
+      <div class="add-follow" style="margin-top:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">保費</div><input class="form-input" id="pr_premium" placeholder="36,000" style="font-size:13px;padding:6px 8px"></div>
+          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">FYC *</div><input class="form-input" id="pr_fyc" placeholder="12,600" style="font-size:13px;padding:6px 8px"></div>
+        </div>
+        <input class="form-input" id="pr_date" type="date" value="${today()}" style="font-size:13px;padding:6px 8px;margin-bottom:6px">
+        <div class="add-follow-footer"><button class="btn btn-primary" style="padding:5px 14px;font-size:12px" onclick="addPolicyPerf(${id})">新增業績</button></div>
+      </div>
+    </div>`;
+}
+function renderPolicyPerfs(p){
+  if(!p.perfs||!p.perfs.length)return`<div style="text-align:center;color:var(--text3);padding:12px;font-size:13px">尚無業績記錄</div>`;
+  const total=p.perfs.reduce((s,r)=>s+numVal(r.fyc),0);
+  return`<div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span>累計 FYC</span><span style="font-weight:700;color:var(--accent)">$${total.toLocaleString()}</span></div>`
+  +p.perfs.map((r,i)=>`<div class="follow-item">
+    <div class="follow-actions"><button class="follow-btn" onclick="delPolicyPerf(${p.id},${i})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></div>
+    <div class="follow-date">${r.date}</div>
+    <div style="display:flex;gap:16px;font-size:13px"><span>保費 $${escHtml(r.premium)}</span><span style="font-weight:700;color:var(--accent)">FYC $${escHtml(r.fyc)}</span></div>
+  </div>`).join('');
+}
+async function addPolicyPerf(pid){
+  const fyc=document.getElementById('pr_fyc').value.trim();if(!fyc){toast('請填寫 FYC');return;}
+  const p=policies.find(x=>x.id===pid);if(!p.perfs)p.perfs=[];
+  p.perfs.unshift({id:Date.now(),premium:document.getElementById('pr_premium').value.trim(),fyc,date:document.getElementById('pr_date').value||today()});
+  await saveP();document.getElementById('detailPanelBody').querySelector('.detail-section:last-child').querySelector('div:first-child').outerHTML=renderPolicyPerfs(p);
+  renderDetail_policy(pid);toast('業績已記錄');
+}
+async function delPolicyPerf(pid,idx){const p=policies.find(x=>x.id===pid);p.perfs.splice(idx,1);await saveP();renderDetail_policy(pid);toast('已刪除')}
+
+function renderDetail(id){
+  if(currentPage==='clients')renderDetail_client_wrap(id);
+  else if(currentPage==='policies')renderDetail_policy(id);
+}
+function renderDetail_client_wrap(id){
+  currentDetailId=id;
+  const c=clients.find(x=>x.id===id);if(!c)return;
+  document.getElementById('detailPanelTitle').textContent=c.name;
+  const cp=policies.filter(p=>p.clientId===id);
+  const ts=TAG_STYLE[c.tag]||{bg:'#F5EDE3',color:'#6B4C2A'};
+  document.getElementById('detailPanelBody').innerHTML=`
+    <div class="detail-section">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="width:48px;height:48px;border-radius:50%;background:${ts.bg};color:${ts.color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px">${(c.region||c.name).slice(0,2)}</div>
+        <div><div style="font-size:18px;font-weight:700">${escHtml(c.name)}</div><div style="font-size:13px;color:var(--text3)">${escHtml(c.company)}</div></div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-field"><div class="detail-field-label">分級</div><div>${badge(c.tag,ts)}</div></div>
+        <div class="detail-field"><div class="detail-field-label">地區</div><div class="detail-field-val">${escHtml(c.region||'—')}</div></div>
+        <div class="detail-field"><div class="detail-field-label">電話</div><div class="detail-field-val">${escHtml(c.phone||'—')}</div></div>
+        <div class="detail-field"><div class="detail-field-label">生日</div><div class="detail-field-val">${escHtml(c.birthday||'—')}</div></div>
+        ${c.nextContact?`<div class="detail-field" style="grid-column:1/-1"><div class="detail-field-label">下次聯絡</div><div style="display:flex;align-items:center;gap:8px"><span class="detail-field-val">${escHtml(c.nextContact)}</span><button onclick="addToCalendar('${escHtml(c.name)}','${escHtml(c.nextContact)}')" class="btn btn-outline" style="padding:3px 8px;font-size:11px">📅</button></div></div>`:''}
+        ${c.note?`<div class="detail-field" style="grid-column:1/-1"><div class="detail-field-label">備註</div><div style="font-size:13px">${escHtml(c.note)}</div></div>`:''}
+      </div>
+    </div>
+    ${cp.length?`<div class="detail-section"><div class="detail-section-title">保單 (${cp.length})</div>${cp.map(p=>`<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-bottom:6px"><div style="font-weight:500;font-size:13px">${escHtml(p.type)}</div><div style="font-size:12px;color:var(--text3)">${escHtml(p.policyNo)} · ${escHtml(p.insurer)} · NT$${escHtml(p.premium)}</div></div>`).join('')}</div>`:''}
+    <div class="detail-section">
+      <div class="detail-section-title">追蹤紀錄</div>
+      <div class="add-follow"><textarea id="newFollowNote" rows="2" placeholder="新增追蹤記錄…"></textarea><div class="add-follow-footer"><button class="btn btn-primary" style="padding:5px 14px;font-size:12px" onclick="addFollow(${id})">儲存</button></div></div>
+      <div id="followsList">${renderFollowItems(c)}</div>
+    </div>`;
+}
+
+// ── Policy Modal ──
+function openPolicyModal(id){
+  editingId=id;const p=id?policies.find(x=>x.id===id):null;
+  const clientOpts=clients.map(c=>`<option value="${c.id}"${p&&p.clientId===c.id?' selected':''}>${escHtml(c.name)} — ${escHtml(c.company)}</option>`).join('');
+  const body=`
+    <div class="form-row"><div class="form-group"><div class="form-label">保單號碼 *</div><input class="form-input" id="fp_no" value="${p?escHtml(p.policyNo):''}"></div><div class="form-group"><div class="form-label">險種 *</div><input class="form-input" id="fp_type" value="${p?escHtml(p.type):''}"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">年繳保費</div><input class="form-input" id="fp_premium" value="${p?escHtml(p.premium):''}"></div><div class="form-group"><div class="form-label">保險公司</div><input class="form-input" id="fp_insurer" value="${p?escHtml(p.insurer):''}"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">生效日期</div><input class="form-input" id="fp_effectDate" type="date" value="${p?escHtml(p.effectDate):''}"></div><div class="form-group"><div class="form-label">到期日</div><input class="form-input" id="fp_expireDate" type="date" value="${p?escHtml(p.expireDate):''}"></div></div>
+    <div class="form-row full"><div class="form-group"><div class="form-label">保戶</div><select class="form-input" id="fp_client"><option value="">— 選擇客戶 —</option>${clientOpts}</select></div></div>`;
+  const footer=(p?`<button class="btn btn-danger" onclick="confirm_('刪除保單','確定刪除此保單？',async()=>{policies=policies.filter(x=>x.id!==${p.id});await saveP();closeModal();closeDetail();renderPage();toast('已刪除')})">刪除</button><div style="flex:1"></div>`:'')
+  +`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="savePolicy()">儲存</button>`;
+  openModal(p?'編輯保單':'新增保單',body,footer);
+}
+async function savePolicy(){
+  const no=document.getElementById('fp_no').value.trim();const type=document.getElementById('fp_type').value.trim();if(!no||!type)return;
+  const data={policyNo:no,type,premium:document.getElementById('fp_premium').value.trim(),insurer:document.getElementById('fp_insurer').value.trim(),effectDate:document.getElementById('fp_effectDate').value,expireDate:document.getElementById('fp_expireDate').value,clientId:parseInt(document.getElementById('fp_client').value)||null};
+  if(editingId){Object.assign(policies.find(x=>x.id===editingId),data);}
+  else{policies.unshift({id:nextPid++,perfs:[],...data});}
+  await saveP();closeModal();renderPage();toast('已儲存');
+}
+
+// ── Follows ──
+function renderFollows(q=''){
+  const all=[];clients.forEach(c=>c.follows.forEach(f=>all.push({...f,client:c})));
+  all.sort((a,b)=>b.date.localeCompare(a.date));
+  const filtered=all.filter(f=>!q||f.client.name.toLowerCase().includes(q)||f.note.toLowerCase().includes(q));
+  document.getElementById('mainContent').innerHTML=`
+    <div class="table-wrap">
+      <div class="table-toolbar"><div class="table-toolbar-title">追蹤紀錄</div></div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>日期</th><th>客戶</th><th>公司</th><th>分級</th><th>追蹤內容</th></tr></thead>
+        <tbody>${filtered.length?filtered.map(f=>{
+          const ts=TAG_STYLE[f.client.tag]||{bg:'#F5EDE3',color:'#6B4C2A'};
+          return`<tr onclick="currentPage='clients';openDetail(${f.client.id})" style="cursor:pointer">
+            <td data-label="日期" style="white-space:nowrap">${f.date}</td>
+            <td data-label="客戶" class="td-name">${escHtml(f.client.name)}</td>
+            <td data-label="公司">${escHtml(f.client.company)}</td>
+            <td data-label="分級">${badge(f.client.tag,ts)}</td>
+            <td data-label="內容" style="max-width:300px;white-space:normal;line-height:1.5">${escHtml(f.note)}</td>
+          </tr>`;
+        }).join(''):`<tr class="empty-row"><td colspan="5">尚無追蹤紀錄</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+      <div class="table-footer"><span class="count">${filtered.length} 筆資料</span></div>
+    </div>`;
+}
+
+// ── Todos ──
+function renderTodos(q=''){
+  let filtered=todos.filter(t=>(activeFilter==='全部'||t.status===activeFilter)&&(!q||t.title.toLowerCase().includes(q)));
+  filtered.sort((a,b)=>{const po={'高':0,'中':1,'低':2};if(a.status==='完成'&&b.status!=='完成')return 1;if(b.status==='完成'&&a.status!=='完成')return -1;return(po[a.priority]||1)-(po[b.priority]||1)});
+  const pending=todos.filter(t=>t.status!=='完成').length;
+  const pills=['全部','待處理','進行中','完成'].map(s=>`<button class="pill${s===activeFilter?' on':''}" onclick="activeFilter='${s}';renderPage()">${s}</button>`).join('');
+  document.getElementById('mainContent').innerHTML=`
+    <div class="table-wrap">
+      <div class="table-toolbar"><div class="table-toolbar-title">代辦事項 <span style="font-size:12px;color:var(--text3);font-weight:400">(${pending} 未完成)</span></div><div class="filter-pills">${pills}</div></div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th style="width:40px"></th><th>待辦內容</th><th>截止日期</th><th>優先級</th><th>狀態</th><th>連結客戶</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody>${filtered.length?filtered.map(t=>{
+          const c=clients.find(x=>x.id===t.clientId);
+          const ps=TODO_PRIORITY_STYLE[t.priority]||{bg:'#F5EDE3',color:'#6B4C2A'};
+          const overdue=t.dueDate&&t.dueDate<today()&&t.status!=='完成';
+          return`<tr>
+            <td data-label="完成"><div style="display:flex;justify-content:center"><div onclick="toggleTodoItem(${t.id})" style="width:20px;height:20px;border-radius:50%;border:2px solid ${t.status==='完成'?'var(--ok)':'var(--border2)'};background:${t.status==='完成'?'var(--ok)':'transparent'};cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              ${t.status==='完成'?'<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+            </div></div></td>
+            <td data-label="待辦內容"><span style="${t.status==='完成'?'text-decoration:line-through;color:var(--text3)':'font-weight:500'}">${escHtml(t.title)}</span></td>
+            <td data-label="截止日期" style="${overdue?'color:var(--danger);font-weight:500':''}">${t.dueDate||'—'}${overdue?' ⚠️':''}</td>
+            <td data-label="優先級">${badge(t.priority,ps)}</td>
+            <td data-label="狀態"><span style="font-size:12px;color:var(--text2)">${t.status}</span></td>
+            <td data-label="客戶">${c?`<span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="currentPage='clients';openDetail(${c.id})">${escHtml(c.name)}</span>`:'—'}</td>
+            <td data-label="操作"><div class="td-actions">
+              <button class="action-btn" onclick="openTodoModal(${t.id})"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="action-btn del" onclick="confirm_('刪除代辦','確定刪除此代辦？',()=>{todos=todos.filter(x=>x.id!==${t.id});saveTodosLocal();renderPage();toast('已刪除')})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div></td>
+          </tr>`;
+        }).join(''):`<tr class="empty-row"><td colspan="7">沒有代辦事項</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+      <div class="table-footer"><span class="count">${filtered.length} 筆</span></div>
+    </div>`;
+  const badge_el=document.getElementById('todoBadge');if(badge_el){badge_el.textContent=pending;badge_el.style.display=pending?'inline':'none';}
+}
+function saveTodosLocal(){localStorage.setItem('crm_todos',JSON.stringify(todos))}
+function toggleTodoItem(id){const t=todos.find(x=>x.id===id);t.status=t.status==='完成'?'待處理':'完成';saveTodosLocal();renderPage();toast(t.status==='完成'?'✓ 已完成':'已重新開啟')}
+function openTodoModal(id){
+  editingId=id;const t=id?todos.find(x=>x.id===id):null;let tagSel=t?t.priority:'中';
+  const clientOpts=clients.map(c=>`<option value="${c.id}"${t&&t.clientId===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('');
+  const statusOpts=['待處理','進行中','完成'].map(s=>`<option${t&&t.status===s?' selected':!t&&s==='待處理'?' selected':''}>${s}</option>`).join('');
+  const body=`
+    <div class="form-row full"><div class="form-group"><div class="form-label">待辦內容 *</div><input class="form-input" id="td_title" value="${t?escHtml(t.title):''}"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">截止日期</div><input class="form-input" id="td_due" type="date" value="${t?escHtml(t.dueDate||''):''}"></div><div class="form-group"><div class="form-label">狀態</div><select class="form-input" id="td_status">${statusOpts}</select></div></div>
+    <div class="form-row full"><div class="form-group"><div class="form-label">優先級</div><div class="chips-wrap" id="tdPri">${['高','中','低'].map(p=>`<button class="chip${p===tagSel?' on':''}" onclick="document.querySelectorAll('#tdPri .chip').forEach(b=>b.classList.remove('on'));this.classList.add('on')">${p}</button>`).join('')}</div></div></div>
+    <div class="form-row full"><div class="form-group"><div class="form-label">連結客戶</div><select class="form-input" id="td_client"><option value="">— 選擇客戶 —</option>${clientOpts}</select></div></div>`;
+  const footer=(t?`<button class="btn btn-danger" onclick="confirm_('刪除代辦','確定刪除？',()=>{todos=todos.filter(x=>x.id!==${t.id});saveTodosLocal();closeModal();renderPage();toast('已刪除')})">刪除</button><div style="flex:1"></div>`:'')
+  +`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveTodoItem()">儲存</button>`;
+  openModal(t?'編輯代辦':'新增代辦',body,footer);
+}
+function saveTodoItem(){
+  const title=document.getElementById('td_title').value.trim();if(!title)return;
+  const priority=document.querySelector('#tdPri .chip.on')?.textContent||'中';
+  const data={title,dueDate:document.getElementById('td_due').value,status:document.getElementById('td_status').value,priority,clientId:parseInt(document.getElementById('td_client').value)||null};
+  if(editingId){Object.assign(todos.find(x=>x.id===editingId),data);}else{todos.unshift({id:nextTodoId++,...data});}
+  saveTodosLocal();closeModal();renderPage();toast('已儲存');
+}
+
+// ── Claims ──
+function renderClaims(q=''){
+  const filtered=claims.filter(cl=>{const c=clients.find(x=>x.id===cl.clientId);return(activeFilter==='全部'||cl.status===activeFilter)&&(!q||cl.reason?.toLowerCase().includes(q)||(c&&c.name.toLowerCase().includes(q)));});
+  const totalAmt=claims.reduce((s,cl)=>s+numVal(cl.amount),0);
+  const pills=['全部',...CLAIM_STATUS].map(s=>`<button class="pill${s===activeFilter?' on':''}" onclick="activeFilter='${s}';renderPage()">${s}</button>`).join('');
+  document.getElementById('mainContent').innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">理賠總件數</div><div class="stat-val">${claims.length}</div></div>
+      <div class="stat-card"><div class="stat-label">申請中</div><div class="stat-val danger">${claims.filter(cl=>cl.status==='申請中').length}</div></div>
+      <div class="stat-card"><div class="stat-label">已完成</div><div class="stat-val ok">${claims.filter(cl=>cl.status==='已完成').length}</div></div>
+      <div class="stat-card"><div class="stat-label">理賠總金額</div><div class="stat-val accent">$${totalAmt.toLocaleString()}</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><div class="table-toolbar-title">理賠列表</div><div class="filter-pills">${pills}</div></div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>日期</th><th>理賠原因</th><th>客戶</th><th>保單</th><th>理賠金額</th><th>狀態</th><th>文件</th><th>Notion</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody>${filtered.length?filtered.map(cl=>{
+          const c=clients.find(x=>x.id===cl.clientId);
+          const p=policies.find(x=>x.id===cl.policyId);
+          const ss=CLAIM_STATUS_STYLE[cl.status]||{bg:'#F5EDE3',color:'#6B4C2A'};
+          return`<tr>
+            <td data-label="日期">${escHtml(cl.date)}</td>
+            <td data-label="理賠原因" class="td-name">${escHtml(cl.reason)}</td>
+            <td data-label="客戶">${c?escHtml(c.name):'—'}</td>
+            <td data-label="保單">${p?escHtml(p.type):'—'}</td>
+            <td data-label="金額">NT$ ${escHtml(cl.amount)}</td>
+            <td data-label="狀態">${badge(cl.status,ss)}</td>
+            <td data-label="文件">${(cl.photos&&cl.photos.length||cl.pdfs&&cl.pdfs.length)?`<span style="font-size:12px;color:var(--accent)">${cl.photos&&cl.photos.length?cl.photos.length+'張照片':''} ${cl.pdfs&&cl.pdfs.length?cl.pdfs.length+' PDF':''}</span>`:'—'}</td>
+            <td data-label="Notion">${cl.notionUrl?`<span style="font-size:11px;background:#F0F0F0;padding:2px 6px;border-radius:4px">✓</span>`:'—'}</td>
+            <td data-label="操作"><div class="td-actions">
+              <button class="action-btn" onclick="openClaimModal(${cl.id})"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="action-btn del" onclick="confirm_('刪除理賠','確定刪除此理賠記錄？',async()=>{claims=claims.filter(x=>x.id!==${cl.id});await saveClaims();renderPage();toast('已刪除')})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div></td>
+          </tr>`;
+        }).join(''):`<tr class="empty-row"><td colspan="9">尚無理賠記錄</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+      <div class="table-footer"><span class="count">${filtered.length} 筆資料</span></div>
+    </div>`;
+}
+
+function openClaimModal(id){
+  editingId=id;const cl=id?claims.find(x=>x.id===id):null;
+  claimPhotos=cl&&cl.photos?[...cl.photos]:[];
+  claimPdfs=cl&&cl.pdfs?[...cl.pdfs]:[];
+  const clientOpts=clients.map(c=>`<option value="${c.id}"${cl&&cl.clientId===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('');
+  const policyOpts=policies.map(p=>`<option value="${p.id}"${cl&&cl.policyId===p.id?' selected':''}>${escHtml(p.type)} — ${escHtml(p.policyNo)}</option>`).join('');
+  const statusOpts=CLAIM_STATUS.map(s=>`<option${cl&&cl.status===s?' selected':!cl&&s==='申請中'?' selected':''}>${s}</option>`).join('');
+  const body=`
+    <div class="form-row"><div class="form-group"><div class="form-label">理賠原因 *</div><input class="form-input" id="cl_reason" value="${cl?escHtml(cl.reason):''}"></div><div class="form-group"><div class="form-label">理賠金額</div><input class="form-input" id="cl_amount" value="${cl?escHtml(cl.amount):''}"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">理賠日期</div><input class="form-input" id="cl_date" type="date" value="${cl?escHtml(cl.date):today()}"></div><div class="form-group"><div class="form-label">狀態</div><select class="form-input" id="cl_status">${statusOpts}</select></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">連結客戶</div><select class="form-input" id="cl_client"><option value="">—</option>${clientOpts}</select></div><div class="form-group"><div class="form-label">連結保單</div><select class="form-input" id="cl_policy"><option value="">—</option>${policyOpts}</select></div></div>
+    <div class="form-row full"><div class="form-group"><div class="form-label">備註</div><textarea class="form-input" id="cl_note">${cl?escHtml(cl.note||''):''}</textarea></div></div>
+    <div class="form-group" style="margin-bottom:14px">
+      <div class="form-label">📷 理賠文件照片</div>
+      <div class="photo-area" onclick="document.getElementById('photoInput').click()">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <div style="font-size:13px;color:var(--text2)">點此拍照或選擇照片</div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" multiple capture="environment" style="display:none" onchange="handleClaimPhotos(event)">
+      <div id="photoPreview" class="photo-previews">${claimPhotos.map((ph,i)=>`<div class="photo-preview"><img src="${ph}"><button class="photo-remove" onclick="removeClaimPhoto(${i})">×</button></div>`).join('')}</div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">📄 PDF 文件（上傳後同步到 Notion）</div>
+      <div class="photo-area" onclick="document.getElementById('pdfInput').click()" style="border-color:var(--accent)">
+        <svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:var(--accent);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 6px;display:block"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <div style="font-size:13px;color:var(--text2)">點此選擇 PDF 檔案</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">上傳至 Supabase Storage，連結自動傳到 Notion</div>
+      </div>
+      <input type="file" id="pdfInput" accept="application/pdf" multiple style="display:none" onchange="handleClaimPdfs(event)">
+      <div id="pdfList" style="margin-top:8px">${renderPdfList()}</div>
+    </div>`;
+  const footer=(cl?`<button class="btn btn-danger" onclick="confirm_('刪除理賠','確定刪除？',async()=>{claims=claims.filter(x=>x.id!==${cl.id});await saveClaims();closeModal();renderPage();toast('已刪除')})">刪除</button><div style="flex:1"></div>`:'')
+  +`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveClaimItem()">儲存並同步Notion</button>`;
+  openModal(cl?'編輯理賠':'新增理賠',body,footer);
+}
+
+function renderPdfList(){
+  if(!claimPdfs.length)return'';
+  return claimPdfs.map((pdf,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border:1px solid var(--border)">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--danger);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span style="font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(pdf.name)}</span>
+      ${pdf.url?`<a href="${escHtml(pdf.url)}" target="_blank" style="font-size:11px;color:var(--accent)">開啟</a>`:'<span style="font-size:11px;color:var(--text3)">待上傳</span>'}
+      <button onclick="removeClaimPdf(${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 2px">×</button>
+    </div>`).join('');
+}
+
+function handleClaimPdfs(e){
+  Array.from(e.target.files).forEach(file=>{
+    claimPdfs.push({name:file.name,file,url:null});
+    document.getElementById('pdfList').innerHTML=renderPdfList();
+  });
+}
+function removeClaimPdf(i){claimPdfs.splice(i,1);document.getElementById('pdfList').innerHTML=renderPdfList()}
+
+async function uploadPdfToSupabase(pdfObj){
+  try{
+    const fileName=`${Date.now()}_${pdfObj.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const r=await fetch(`${SUPABASE_URL}/storage/v1/object/claims/${fileName}`,{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/octet-stream','x-upsert':'true'},
+      body:pdfObj.file
+    });
+    const result=await r.json();
+    if(r.ok){return`${SUPABASE_URL}/storage/v1/object/public/claims/${fileName}`;}
+    else{showError('PDF 上傳失敗',`檔案：${pdfObj.name}<br>狀態：${r.status}<br>錯誤：${JSON.stringify(result)}`);return null;}
+  }catch(e){showError('PDF 上傳錯誤',`檔案：${pdfObj.name}<br>錯誤：${e.message}`);return null;}
+}
+async function sendToNotion(cl,c,p,pdfUrls){
+  try{
+    const pdfText=pdfUrls&&pdfUrls.length?'\n\nPDF 文件：\n'+pdfUrls.map((u,i)=>`${i+1}. ${u}`).join('\n'):'';
+    const body={parent:{database_id:NOTION_DB},properties:{
+      '理賠項目':{title:[{text:{content:cl.reason||'理賠'}}]},
+      '客戶姓名':{rich_text:[{text:{content:c?c.name:''}}]},
+      '理賠日期':{date:{start:cl.date||today()}},
+      '理賠金額':{number:numVal(cl.amount)},
+      '狀態':{select:{name:cl.status||'申請中'}},
+      '備註':{rich_text:[{text:{content:(cl.note||'')+pdfText}}]}
+    }};
+    const r=await fetch('https://api.notion.com/v1/pages',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+NOTION_TOKEN,'Notion-Version':'2022-06-28'},body:JSON.stringify(body)});
+    const data=await r.json();return data.id?true:false;
+  }catch(e){return false;}
+}
+async function saveClaimItem(){
+  try{
+    const reason=document.getElementById('cl_reason').value.trim();
+    if(!reason){toast('請填寫理賠原因');return;}
+    const cid=parseInt(document.getElementById('cl_client').value)||null;
+    const pid=parseInt(document.getElementById('cl_policy').value)||null;
+    toast('上傳 PDF 中…');
+    const uploadedPdfs=[];
+    for(const pdfObj of claimPdfs){
+      if(pdfObj.url){uploadedPdfs.push(pdfObj);continue;}
+      const url=await uploadPdfToSupabase(pdfObj);
+      uploadedPdfs.push({name:pdfObj.name,url:url||null});
+    }
+    const pdfUrls=uploadedPdfs.filter(p=>p.url).map(p=>p.url);
+    const cl={reason,amount:document.getElementById('cl_amount').value.trim(),date:document.getElementById('cl_date').value,status:document.getElementById('cl_status').value,clientId:cid,policyId:pid,note:document.getElementById('cl_note').value.trim(),photos:claimPhotos,pdfs:uploadedPdfs};
+    toast('同步 Notion 中…');
+    const ok=await sendToNotion(cl,clients.find(x=>x.id===cid),policies.find(x=>x.id===pid),pdfUrls);
+    cl.notionUrl=ok;
+    if(editingId){Object.assign(claims.find(x=>x.id===editingId),cl);}else{claims.unshift({id:nextClaimId++,...cl});}
+    await saveClaims();
+    closeModal();renderPage();
+    const pdfMsg=pdfUrls.length?`，${pdfUrls.length} 個 PDF 已上傳`:'';
+    toast(ok?`已儲存${pdfMsg}，同步 Notion ✓`:`已儲存${pdfMsg}（Notion 同步失敗）`);
+  }catch(e){
+    showError('儲存失敗',`錯誤訊息：${e.message}<br><br>請截圖此訊息傳給開發者`);
+  }
+}
+
+// ── Stats ──
+function renderStats(){
+  const totalFYC=policies.flatMap(p=>p.perfs||[]).reduce((s,r)=>s+numVal(r.fyc),0);
+  const totalPrem=policies.flatMap(p=>p.perfs||[]).reduce((s,r)=>s+numVal(r.premium),0);
+  const counts={};TAGS.forEach(t=>counts[t]=0);clients.forEach(c=>counts[c.tag]=(counts[c.tag]||0)+1);
+  document.getElementById('mainContent').innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">客戶總數</div><div class="stat-val">${clients.length}</div></div>
+      <div class="stat-card"><div class="stat-label">保單總數</div><div class="stat-val">${policies.length}</div></div>
+      <div class="stat-card"><div class="stat-label">累計 FYC</div><div class="stat-val accent">$${totalFYC.toLocaleString()}</div></div>
+      <div class="stat-card"><div class="stat-label">理賠件數</div><div class="stat-val">${claims.length}</div></div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:20px">
+      <div class="table-toolbar"><div class="table-toolbar-title">客戶分級分布</div></div>
+      <div style="padding:16px">${TAGS.map(t=>{const n=counts[t]||0;const pct=clients.length?Math.round(n/clients.length*100):0;const s=TAG_STYLE[t]||{bg:'#F5EDE3',color:'#6B4C2A'};return`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span style="font-weight:500">${t} <span style="font-weight:400;color:var(--text3);font-size:11px">— ${TAG_DESC[t]}</span></span><span style="color:var(--text3)">${n} 人 · ${pct}%</span></div><div style="height:8px;background:var(--surface2);border-radius:var(--radius-pill);overflow:hidden"><div style="height:100%;width:${pct}%;background:${s.color};border-radius:var(--radius-pill);transition:width .4s"></div></div></div>`}).join('')}</div>
+    </div>`;
+}
+
+// ── Calendar ──
+function addToCalendar(name,date){
+  const d=date.replace(/-/g,'');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//兜式保客戶資料庫//TW','BEGIN:VEVENT',
+    'UID:'+d+'-'+Math.random().toString(36).slice(2)+'@crm','DTSTAMP:'+new Date().toISOString().replace(/[-:.]/g,'').slice(0,15)+'Z',
+    'DTSTART;VALUE=DATE:'+d,'DTEND;VALUE=DATE:'+d,'SUMMARY:聯絡客戶：'+name,'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='聯絡_'+name+'_'+date+'.ics';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('行事曆檔案已下載');
+}
+
+// ── Export ──
+function exportData(){
+  const blob=new Blob([JSON.stringify({clients,policies,claims,todos},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='crm_backup_'+today()+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('資料已匯出');
+}
+
+const APP_PASSWORD='cl3';
+
+function checkLogin(){
+  const stored=sessionStorage.getItem('crm_auth');
+  if(stored===APP_PASSWORD)return true;
+  return false;
+}
+function showError(title,msg){
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  div.innerHTML=`<div style="background:#fff;border-radius:12px;padding:24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-size:16px;font-weight:700;color:#D93025;margin-bottom:8px">⚠️ ${title}</div>
+    <div style="font-size:13px;color:#333;line-height:1.6;margin-bottom:16px;word-break:break-all">${msg}</div>
+    <button onclick="this.closest('div[style]').remove()" style="background:#B8895A;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;width:100%">關閉</button>
+  </div>`;
+  document.body.appendChild(div);
+}
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+}
+function tryLogin(){
+  const pw=document.getElementById('loginPw').value;
+  if(pw===APP_PASSWORD){
+    sessionStorage.setItem('crm_auth',APP_PASSWORD);
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    init();
+  }else{
+    document.getElementById('loginError').style.display='block';
+    document.getElementById('loginPw').value='';
+    document.getElementById('loginPw').focus();
+  }
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  init();
+});
+if(document.readyState==='complete'||document.readyState==='interactive'){
+  setTimeout(()=>{
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    if(!clients.length){init();}
+  },100);
+}
+async function init(){
+  document.getElementById('mainContent').innerHTML=`<div style="text-align:center;padding:60px;color:var(--text3)">資料載入中…</div>`;
+  // 先用本地資料
+  try{const t=localStorage.getItem('crm_todos');if(t)todos=JSON.parse(t);}catch(e){}
+  // 嘗試從 localStorage 讀取
+  try{const c=localStorage.getItem('crm_clients_local');if(c)clients=JSON.parse(c);}catch(e){}
+  try{const p=localStorage.getItem('crm_policies_local');if(p)policies=JSON.parse(p);}catch(e){}
+  try{const cl=localStorage.getItem('crm_claims_local');if(cl)claims=JSON.parse(cl);}catch(e){}
+  // 如果沒有本地資料，用示範資料
+  if(!clients.length){clients=JSON.parse(JSON.stringify(DEMO_C));localStorage.setItem('crm_clients_local',JSON.stringify(clients));}
+  if(!policies.length){policies=JSON.parse(JSON.stringify(DEMO_P));localStorage.setItem('crm_policies_local',JSON.stringify(policies));}
+  nextCid=clients.reduce((m,x)=>Math.max(m,x.id),0)+1;
+  nextPid=policies.reduce((m,x)=>Math.max(m,x.id),0)+1;
+  nextClaimId=claims.reduce((m,x)=>Math.max(m,x.id),0)+1;
+  nextTodoId=todos.reduce((m,x)=>Math.max(m,x.id),0)+1;
+  const pending=todos.filter(t=>t.status!=='完成').length;
+  const b=document.getElementById('todoBadge');if(b){b.textContent=pending;b.style.display=pending?'inline':'none';}
+  renderPage();
+  toast('資料已載入');
+  // 背景嘗試同步 Supabase
+  syncSupabase();
+}
+
+async function syncSupabase(){
+  try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),5000);
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/clients?select=*&order=id.asc&limit=1`,{headers:SB_HEADERS,signal:controller.signal});
+    clearTimeout(timeout);
+    if(r.ok){
+      const rows=await r.json();
+      if(rows&&rows.length>0){
+        const data=JSON.parse(rows[0].data);
+        if(data&&data.length){
+          clients=data;
+          localStorage.setItem('crm_clients_local',JSON.stringify(clients));
+        }
+      }
+      // 同步 policies
+      const r2=await fetch(`${SUPABASE_URL}/rest/v1/policies?select=*&order=id.asc&limit=1`,{headers:SB_HEADERS});
+      if(r2.ok){const rows2=await r2.json();if(rows2&&rows2.length>0){const d=JSON.parse(rows2[0].data);if(d&&d.length){policies=d;localStorage.setItem('crm_policies_local',JSON.stringify(policies));}}}
+      // 同步 claims
+      const r3=await fetch(`${SUPABASE_URL}/rest/v1/claims?select=*&order=id.asc&limit=1`,{headers:SB_HEADERS});
+      if(r3.ok){const rows3=await r3.json();if(rows3&&rows3.length>0){const d=JSON.parse(rows3[0].data);if(d&&d.length){claims=d;localStorage.setItem('crm_claims_local',JSON.stringify(claims));}}}
+      nextCid=clients.reduce((m,x)=>Math.max(m,x.id),0)+1;
+      nextPid=policies.reduce((m,x)=>Math.max(m,x.id),0)+1;
+      nextClaimId=claims.reduce((m,x)=>Math.max(m,x.id),0)+1;
+      renderPage();
+      toast('已從雲端同步資料 ✓');
+    }
+  }catch(e){
+    // 靜默失敗，繼續用本地資料
+  }
+}
+</script>
+</body>
+</html>
